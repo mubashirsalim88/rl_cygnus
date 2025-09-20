@@ -89,12 +89,13 @@ class TradingEnvironment:
         # Return initial observation (will be from step 0 due to latency handling)
         return self._get_observation()
 
-    def step(self, action: int) -> Tuple[np.ndarray, float, bool, Dict[str, Any]]:
+    def step(self, action: float) -> Tuple[np.ndarray, float, bool, Dict[str, Any]]:
         """
         Execute one step in the environment with latency-delayed observations.
 
         Args:
-            action: Action to take (0=HOLD, 1=BUY, 2=SELL)
+            action: Continuous action value between -1 and 1
+                   -1 = Full SELL, 0 = HOLD, +1 = Full BUY
 
         Returns:
             Tuple of (next_observation, reward, done, info)
@@ -104,9 +105,12 @@ class TradingEnvironment:
             but receives observations from step (t+1-latency) as next_observation,
             simulating realistic market data delays.
         """
-        # Validate action
-        if action not in [self.HOLD, self.BUY, self.SELL]:
-            raise ValueError(f"Invalid action: {action}. Must be 0 (HOLD), 1 (BUY), or 2 (SELL)")
+        # Validate action range - accept any numeric type
+        if not isinstance(action, (int, float, np.integer, np.floating)):
+            raise ValueError(f"Action must be a number, got {type(action)}")
+
+        # Convert to float and clamp action to valid range
+        action = float(np.clip(action, -1.0, 1.0))
 
         # Store previous portfolio value for reward calculation
         self.previous_portfolio_value = self.portfolio_value
@@ -141,12 +145,13 @@ class TradingEnvironment:
 
         return next_observation, reward, done, info
 
-    def _take_action(self, action: int) -> None:
+    def _take_action(self, action: float) -> None:
         """
         Execute a trading action with transaction costs and slippage.
 
         Args:
-            action: Action to take (0=HOLD, 1=BUY, 2=SELL)
+            action: Continuous action value between -1 and 1
+                   -1 = Full SELL, 0 = HOLD, +1 = Full BUY
 
         Note:
             All BUY and SELL actions incur commission costs and slippage penalties.
@@ -154,18 +159,22 @@ class TradingEnvironment:
         """
         current_price = self._get_current_price()
 
-        if action == self.BUY:
-            # Buy as many shares as possible with current balance, accounting for commission and slippage
+        # Convert continuous action to trade intention
+        if action > 0.1:  # Buy threshold
+            # Scale action to determine buy amount (action = 1.0 means buy with full balance)
+            buy_fraction = action
             if self.balance > 0:
-                # First estimate shares we can afford (iterative approach due to slippage dependency)
-                # Start with no-slippage estimate
-                initial_shares_estimate = self.balance / (current_price * (1 + self.commission_rate))
+                # Calculate how much of balance to use for buying
+                available_balance = self.balance * buy_fraction
+
+                # First estimate shares we can afford
+                initial_shares_estimate = available_balance / (current_price * (1 + self.commission_rate))
 
                 # Get execution price with slippage for this estimate
                 execution_price = self._get_execution_price(initial_shares_estimate, 'buy')
 
                 # Recalculate actual affordable shares with slippage-adjusted price
-                shares_to_buy = self.balance / (execution_price * (1 + self.commission_rate))
+                shares_to_buy = available_balance / (execution_price * (1 + self.commission_rate))
 
                 # Get final execution price for actual trade size
                 final_execution_price = self._get_execution_price(shares_to_buy, 'buy')
@@ -176,19 +185,22 @@ class TradingEnvironment:
                 self.shares_held += shares_to_buy
                 self.balance -= (trade_value + commission_cost)
 
-        elif action == self.SELL:
-            # Sell all held shares, accounting for slippage and deducting commission from proceeds
+        elif action < -0.1:  # Sell threshold
+            # Scale action to determine sell amount (action = -1.0 means sell all shares)
+            sell_fraction = abs(action)
             if self.shares_held > 0:
-                # Get execution price with slippage for the number of shares we're selling
-                execution_price = self._get_execution_price(self.shares_held, 'sell')
+                shares_to_sell = self.shares_held * sell_fraction
 
-                sale_value = self.shares_held * execution_price
+                # Get execution price with slippage for the number of shares we're selling
+                execution_price = self._get_execution_price(shares_to_sell, 'sell')
+
+                sale_value = shares_to_sell * execution_price
                 commission_cost = sale_value * self.commission_rate
 
                 self.balance += (sale_value - commission_cost)
-                self.shares_held = 0.0
+                self.shares_held -= shares_to_sell
 
-        # For HOLD action, no changes to balance or shares
+        # For HOLD action (-0.1 <= action <= 0.1), no changes to balance or shares
 
         # Update portfolio value (use current market price, not execution price)
         self.portfolio_value = self.balance + (self.shares_held * current_price)

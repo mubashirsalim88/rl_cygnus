@@ -17,10 +17,15 @@ import logging
 from pathlib import Path
 
 # Add the src directory to the Python path to enable imports
-sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'src'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
 
-from data_sourcing.binance_loader import BinanceLoader
-from components.feature_engineering import FeatureEngine
+try:
+    from data_sourcing.binance_loader import BinanceLoader
+    from components.feature_engineering import FeatureEngine
+except ImportError as e:
+    print(f"Import error: {e}")
+    print("Please run 'python setup_project.py' from the project root to install dependencies.")
+    sys.exit(1)
 
 
 def setup_logging():
