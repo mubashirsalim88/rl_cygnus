@@ -44,7 +44,7 @@ class TradingEnvironment:
         self.latency = latency
 
         # Multi-objective reward system parameters
-        default_weights = {'profit': 1.0, 'hold': 0.001, 'risk': 0.1}
+        default_weights = {'profit': 1.5, 'hold': 0.0001, 'risk': 0.0}
         self.reward_weights = reward_weights if reward_weights is not None else default_weights
         self.loss_aversion_coef = loss_aversion_coef
 
