@@ -118,8 +118,8 @@ def run_training(
         state_dim=state_dim,
         action_dim=action_dim,
         hidden_dim=256,
-        actor_lr=3e-4,
-        critic_lr=3e-4,
+        actor_lr=3e-5,
+        critic_lr=3e-5,
         discount=0.99,
         tau=0.005,
         policy_noise=0.2,
@@ -215,7 +215,7 @@ def run_training(
             if episode_reward > best_episode_reward:
                 best_episode_reward = episode_reward
                 # Save best model
-                best_model_path = models_dir / "best_td3_model.pth"
+                best_model_path = models_dir / "best_td3_model_5m.pth"
                 agent.save(str(best_model_path))
 
             # Episode logging
@@ -251,7 +251,7 @@ def run_training(
 
             # Save model periodically
             if (episode + 1) % save_freq == 0:
-                checkpoint_path = models_dir / f"td3_checkpoint_ep{episode + 1}.pth"
+                checkpoint_path = models_dir / f"td3_checkpoint_ep{episode + 1}_5m.pth"
                 agent.save(str(checkpoint_path))
                 logger.info(f" Model checkpoint saved: {checkpoint_path}")
 
@@ -276,7 +276,7 @@ def run_training(
         logger.info(f"Final average reward (last 100 episodes): {final_avg_reward:.4f}")
 
     # Save final model
-    final_model_path = models_dir / "final_td3_model.pth"
+    final_model_path = models_dir / "final_td3_model_5m.pth"
     agent.save(str(final_model_path))
     logger.info(f" Final model saved: {final_model_path}")
 
@@ -285,7 +285,7 @@ def run_training(
         'episode': range(1, len(episode_rewards) + 1),
         'reward': episode_rewards
     })
-    history_path = models_dir / "training_history.csv"
+    history_path = models_dir / "training_history_5m.csv"
     history_df.to_csv(history_path, index=False)
     logger.info(f" Training history saved: {history_path}")
 
@@ -293,13 +293,13 @@ def run_training(
 
 
 if __name__ == '__main__':
-    # You can modify these parameters as needed
+    # Configuration for 5-minute timeframe training
     run_training(
-        data_file="BTCUSDT-1h_features.csv",
-        num_episodes=1000,
+        data_file="BTCUSDT-5m_features.csv",
+        num_episodes=50,
         batch_size=256,
-        start_timesteps=10000,
-        eval_freq=50,
-        save_freq=250,
+        start_timesteps=25000,
+        eval_freq=5,
+        save_freq=20,
         max_timesteps=500000
     )

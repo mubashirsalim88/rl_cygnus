@@ -4,3 +4,4 @@ pandas-ta==0.4.71b0
 hurst>=0.0.5
 numpy>=1.21.0
 torch>=1.12.0
+matplotlib>=3.5.0
