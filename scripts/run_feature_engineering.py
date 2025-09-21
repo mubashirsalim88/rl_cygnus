@@ -137,12 +137,16 @@ def main():
     # Parse command line arguments
     args = parse_arguments()
 
+    # Create unique file stem based on symbol, interval, and date range
+    file_stem = f"{args.symbol}-{args.interval}_{args.start_date}_to_{args.end_date}"
+
     logger.info("="*60)
     logger.info("STARTING FEATURE ENGINEERING PIPELINE")
     logger.info("="*60)
     logger.info(f"Symbol: {args.symbol}")
     logger.info(f"Interval: {args.interval}")
     logger.info(f"Date Range: {args.start_date} to {args.end_date}")
+    logger.info(f"File stem: {file_stem}")
     logger.info("-"*60)
 
     try:
@@ -164,7 +168,8 @@ def main():
 
         # Step 3: Save raw data
         logger.info("Step 3: Saving raw data...")
-        raw_file_path = loader.save_to_csv(raw_df, args.symbol, args.interval)
+        raw_filename = f"{file_stem}.csv"
+        raw_file_path = loader.save_to_csv(raw_df, args.symbol, args.interval, filename=raw_filename)
         logger.info(f"✓ Raw data saved to: {raw_file_path}")
 
         # Step 4: Initialize FeatureEngine
@@ -199,8 +204,8 @@ def main():
         processed_dir = Path('data/processed')
         processed_dir.mkdir(parents=True, exist_ok=True)
 
-        # Create descriptive filename
-        features_filename = f"{args.symbol}-{args.interval}_features.csv"
+        # Create descriptive filename with dynamic naming
+        features_filename = f"{file_stem}_features.csv"
         features_filepath = processed_dir / features_filename
 
         # Save the processed DataFrame

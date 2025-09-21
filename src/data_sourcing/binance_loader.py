@@ -130,7 +130,7 @@ class BinanceLoader:
         except Exception as e:
             raise ConnectionError(f"Failed to fetch historical data: {e}")
 
-    def save_to_csv(self, df: pd.DataFrame, symbol: str, interval: str) -> str:
+    def save_to_csv(self, df: pd.DataFrame, symbol: str, interval: str, filename: str = None) -> str:
         """
         Save DataFrame to CSV file in the data/raw/ directory.
 
@@ -138,6 +138,7 @@ class BinanceLoader:
             df: DataFrame to save
             symbol: Trading pair symbol
             interval: Kline interval
+            filename: Optional custom filename. If None, uses default format.
 
         Returns:
             Path to the saved CSV file
@@ -146,8 +147,9 @@ class BinanceLoader:
         raw_data_dir = os.path.join('data', 'raw')
         os.makedirs(raw_data_dir, exist_ok=True)
 
-        # Create filename
-        filename = f"{symbol.upper()}-{interval}.csv"
+        # Create filename - use provided filename or default format
+        if filename is None:
+            filename = f"{symbol.upper()}-{interval}.csv"
         filepath = os.path.join(raw_data_dir, filename)
 
         # Save to CSV

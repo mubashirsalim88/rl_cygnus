@@ -24,7 +24,7 @@ class TradingEnvironment:
     BUY = 1
     SELL = 2
 
-    def __init__(self, df: pd.DataFrame, initial_balance: float = 10000.0, commission_rate: float = 0.001, slippage_factor: float = 0.0005, latency: int = 2):
+    def __init__(self, df: pd.DataFrame, initial_balance: float = 10000.0, commission_rate: float = 0.001, slippage_factor: float = 0.0005, latency: int = 2, reward_weights: dict = None, loss_aversion_coef: float = 2.0):
         """
         Initialize the trading environment with transaction costs, slippage, and latency.
 
@@ -34,12 +34,19 @@ class TradingEnvironment:
             commission_rate: Commission rate for trades (default: 0.001 = 0.1%)
             slippage_factor: Factor determining slippage magnitude (default: 0.0005 = 0.05%)
             latency: Observation delay in time steps (default: 2 steps)
+            reward_weights: Dictionary containing weights for reward components (default: None)
+            loss_aversion_coef: Coefficient for loss aversion in profit rewards (default: 2.0)
         """
         self.df = df.copy()
         self.initial_balance = initial_balance
         self.commission_rate = commission_rate
         self.slippage_factor = slippage_factor
         self.latency = latency
+
+        # Multi-objective reward system parameters
+        default_weights = {'profit': 1.0, 'hold': 0.001, 'risk': 0.1}
+        self.reward_weights = reward_weights if reward_weights is not None else default_weights
+        self.loss_aversion_coef = loss_aversion_coef
 
         # Validate DataFrame contains required columns
         if 'close' not in self.df.columns:
@@ -57,6 +64,12 @@ class TradingEnvironment:
         self.shares_held: float = 0.0
         self.portfolio_value: float = initial_balance
         self.previous_portfolio_value: float = initial_balance
+
+        # Multi-objective reward tracking variables
+        self.position_entry_price: float = 0.0
+        self.steps_in_position: int = 0
+        self.peak_portfolio_value: float = initial_balance
+        self.max_drawdown: float = 0.0
 
         # Trading history for analysis
         self.history: List[Dict[str, Any]] = []
@@ -82,6 +95,12 @@ class TradingEnvironment:
         self.shares_held = 0.0
         self.portfolio_value = self.initial_balance
         self.previous_portfolio_value = self.initial_balance
+
+        # Reset multi-objective reward tracking variables
+        self.position_entry_price = 0.0
+        self.steps_in_position = 0
+        self.peak_portfolio_value = self.initial_balance
+        self.max_drawdown = 0.0
 
         # Clear trading history
         self.history = []
@@ -119,7 +138,7 @@ class TradingEnvironment:
         self._take_action(action)
 
         # Calculate reward based on portfolio performance
-        reward = self._get_reward()
+        reward = self._get_reward(action)
 
         # Check if episode is done (reached end of data)
         done = self.current_step >= len(self.df) - 1
@@ -182,6 +201,11 @@ class TradingEnvironment:
                 trade_value = shares_to_buy * final_execution_price
                 commission_cost = trade_value * self.commission_rate
 
+                # Track position entry price when opening a new position
+                if self.shares_held == 0.0:
+                    self.position_entry_price = final_execution_price
+                    self.steps_in_position = 0
+
                 self.shares_held += shares_to_buy
                 self.balance -= (trade_value + commission_cost)
 
@@ -200,10 +224,19 @@ class TradingEnvironment:
                 self.balance += (sale_value - commission_cost)
                 self.shares_held -= shares_to_sell
 
+                # Reset position trackers when position is fully closed
+                if abs(self.shares_held) < 1e-8:  # Near zero check for floating point precision
+                    self.position_entry_price = 0.0
+                    self.steps_in_position = 0
+
         # For HOLD action (-0.1 <= action <= 0.1), no changes to balance or shares
 
         # Update portfolio value (use current market price, not execution price)
         self.portfolio_value = self.balance + (self.shares_held * current_price)
+
+        # Increment holding counter if in a position
+        if self.shares_held > 0:
+            self.steps_in_position += 1
 
     def _get_execution_price(self, shares_traded: float, trade_type: str) -> float:
         """
@@ -255,20 +288,59 @@ class TradingEnvironment:
 
         return execution_price
 
-    def _get_reward(self) -> float:
+    def _get_reward(self, action: float) -> float:
         """
-        Calculate the reward for the current step.
+        Calculate multi-objective reward for the current step.
+
+        Args:
+            action: The action taken this step to determine if profit event occurred
 
         Returns:
-            Reward based on change in portfolio value
+            Weighted combination of profit, holding, and risk rewards
         """
-        # Simple reward: change in portfolio value
+        # Calculate base metrics
         portfolio_change = self.portfolio_value - self.previous_portfolio_value
 
-        # Normalize by initial balance to make rewards scale-independent
-        normalized_reward = portfolio_change / self.initial_balance
+        # Update peak portfolio value and max drawdown
+        if self.portfolio_value > self.peak_portfolio_value:
+            self.peak_portfolio_value = self.portfolio_value
 
-        return normalized_reward
+        current_drawdown = (self.peak_portfolio_value - self.portfolio_value) / self.peak_portfolio_value
+        if current_drawdown > self.max_drawdown:
+            self.max_drawdown = current_drawdown
+
+        # Initialize reward components
+        r_profit = 0.0
+        r_hold = 0.0
+        r_risk = 0.0
+
+        # r_profit: Event-driven reward for trade completion
+        if action < -0.1 and self.position_entry_price > 0:  # SELL action and we had a position
+            current_price = self._get_current_price()
+            if current_price > self.position_entry_price:
+                # Profitable trade - log return
+                r_profit = np.log(current_price / self.position_entry_price)
+            else:
+                # Loss trade - log return with loss aversion
+                r_profit = self.loss_aversion_coef * np.log(current_price / self.position_entry_price)
+
+        # r_hold: Time-based penalty for holding positions
+        if self.shares_held > 0:
+            r_hold = -np.log(1 + self.steps_in_position)
+        else:
+            r_hold = 0.0
+
+        # r_risk: Drawdown penalty
+        r_risk = -self.max_drawdown
+
+        # Calculate final weighted reward
+        final_reward = (
+            self.reward_weights['profit'] * r_profit +
+            self.reward_weights['hold'] * r_hold +
+            self.reward_weights['risk'] * r_risk
+        )
+
+        return final_reward
 
     def _get_observation(self) -> np.ndarray:
         """
