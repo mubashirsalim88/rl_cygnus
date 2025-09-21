@@ -295,7 +295,7 @@ def run_training(
 if __name__ == '__main__':
     # Configuration for 5-minute timeframe training
     run_training(
-        data_file="BTCUSDT-5m_features.csv",
+        data_file="BTCUSDT-5m_2023-01-01_to_2023-12-31_features.csv",
         num_episodes=50,
         batch_size=256,
         start_timesteps=25000,
