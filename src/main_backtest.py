@@ -139,6 +139,15 @@ def run_backtest(env: TradingEnvironment, agent: TD3Agent) -> pd.DataFrame:
     """
     print("Starting backtest simulation...")
 
+    def continuous_to_discrete_action(continuous_action: float) -> int:
+        """Converts a continuous action into a discrete action."""
+        if continuous_action < -0.33:
+            return 2  # SELL
+        elif continuous_action > 0.33:
+            return 1  # BUY
+        else:
+            return 0  # HOLD
+
     # Reset environment
     state = env.reset()
     done = False
@@ -146,13 +155,16 @@ def run_backtest(env: TradingEnvironment, agent: TD3Agent) -> pd.DataFrame:
 
     while not done:
         # Get deterministic action from agent (no exploration noise)
-        action = agent.select_action(state, add_noise=False)
+        continuous_action = agent.select_action(state, add_noise=False)
 
-        # Convert numpy array to float for environment step
-        action_float = float(action[0]) if isinstance(action, np.ndarray) else float(action)
+        # Convert numpy array to float for discrete conversion
+        continuous_action_float = float(continuous_action[0]) if isinstance(continuous_action, np.ndarray) else float(continuous_action)
+
+        # Convert continuous action to discrete action
+        discrete_action = continuous_to_discrete_action(continuous_action_float)
 
         # Take action in environment
-        next_state, reward, done, info = env.step(action_float)
+        next_state, reward, done, info = env.step(discrete_action)
 
         # Move to next state
         state = next_state
@@ -209,8 +221,8 @@ def calculate_performance_metrics(history_df: pd.DataFrame, initial_balance: flo
         sortino_ratio = 0.0
 
     # Win Rate and Trade Count
-    # Count actual trades (non-HOLD actions)
-    trades = history_df[abs(history_df['action']) > 0.1]
+    # Count actual trades (non-HOLD actions: BUY=1, SELL=2)
+    trades = history_df[history_df['action'] != 0]
     total_trades = len(trades)
 
     if total_trades > 0:
@@ -272,9 +284,9 @@ def create_visualization(history_df: pd.DataFrame, df: pd.DataFrame, save_path: 
     # Top subplot: Price chart with buy/sell signals
     ax1.plot(timestamps, prices, label='Asset Price', color='black', linewidth=1, alpha=0.8)
 
-    # Mark buy and sell actions
-    buy_signals = history_df[actions > 0.1]
-    sell_signals = history_df[actions < -0.1]
+    # Mark buy and sell actions (discrete actions: 0=HOLD, 1=BUY, 2=SELL)
+    buy_signals = history_df[actions == 1]
+    sell_signals = history_df[actions == 2]
 
     if len(buy_signals) > 0:
         buy_timestamps = pd.to_datetime(buy_signals['timestamp']) if 'timestamp' in buy_signals.columns else df.index[:len(buy_signals)]

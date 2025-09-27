@@ -324,7 +324,7 @@ if __name__ == '__main__':
         data_file="BTCUSDT-5m_2023-01-01_to_2023-12-31_features.csv",
         num_episodes=50,
         batch_size=256,
-        start_timesteps=25000,
+        start_timesteps=50000,  # MODIFIED
         eval_freq=5,
         save_freq=20,
         max_timesteps=500000

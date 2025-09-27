@@ -75,7 +75,8 @@ class TradingEnvironment:
 
         # Get feature columns (exclude 'close' as it's used for pricing)
         self.feature_columns = [col for col in self.df.columns if col != 'close']
-        self.n_features = len(self.feature_columns)
+        # The number of features is the original count + 1 (for position_status)
+        self.n_features = len(self.feature_columns) + 1
 
     def reset(self) -> np.ndarray:
         """
@@ -312,64 +313,56 @@ class TradingEnvironment:
     def _get_reward(self, action: int, execution_price: float, entry_price_for_cycle: float) -> float:
         """
         Calculate composite reward using multi-objective reward function.
-
-        Args:
-            action: The discrete action taken this step {0: HOLD, 1: BUY, 2: SELL}
-            execution_price: The price at which the trade was executed (0 for HOLD/invalid actions)
-            entry_price_for_cycle: Entry price for completed trade (0 if no trade completed)
-
-        Returns:
-            Weighted combination of cycle, time, unrealized, and drawdown rewards
         """
         # Initialize all reward components to 0
-        r_cycle, r_time, r_unrealized, r_drawdown, r_opportunity = 0.0, 0.0, 0.0, 0.0, 0.0
+        r_cycle, r_time, r_unrealized, r_drawdown, r_opportunity, r_entry = 0.0, 0.0, 0.0, 0.0, 0.0, 0.0
+
+        # R(entry) - NEW: Add a small incentive for successfully taking a BUY action
+        if action == 1 and self.position_status == 1:  # A successful buy just occurred
+            r_entry = 0.01  # Small bonus for entering a trade
 
         # R(cycle) - Event-Driven, on SELL only
-        if action == 2 and execution_price > 0 and entry_price_for_cycle > 0:  # SELL just happened successfully
-            # Calculate net log return, including costs for both buy and sell
+        if action == 2 and execution_price > 0 and entry_price_for_cycle > 0:
             transaction_cost = 2 * np.log(1 - self.commission_rate)
             r_cycle = (np.log(execution_price) - np.log(entry_price_for_cycle)) + transaction_cost
 
         # Shaping Rewards - Per-Step, only when IN a position
         if self.position_status == 1:
-            # R(time) - Penalty for holding
             r_time = -np.log(1 + self.steps_in_trade)
-
-            # R(unrealized) - Incentive for holding profitable trades
             current_price = self._get_current_price()
             unrealized_return = (current_price - self.entry_price) / self.entry_price
             r_unrealized = unrealized_return
-
-            # R(drawdown) - Penalty for price falling from trade's peak
             drawdown = (self.high_water_mark - current_price) / self.high_water_mark
             r_drawdown = -drawdown if drawdown > 0 else 0.0
 
         # R(opportunity) - Penalty for missing opportunities during clear uptrends
-        if self.position_status == 0:  # Only when flat/not in position
+        if self.position_status == 0:
             current_price = self._get_current_price()
-
-            # Check if EMA_200 column exists and get trend signal
             if 'EMA_200' in self.df.columns and self.current_step > 0:
                 try:
                     ema_200 = self.df.iloc[self.current_step]['EMA_200']
                     prev_price = self.df.iloc[self.current_step - 1]['close']
-
-                    # Calculate log return for current step
                     log_return = np.log(current_price / prev_price)
-
-                    # Apply opportunity cost penalty if in clear uptrend and missing gains
                     if current_price > ema_200 and log_return > 0:
-                        r_opportunity = log_return  # Penalty equals the missed profit
+                        # MODIFIED: The penalty is now directly negative
+                        r_opportunity = -log_return
                 except (IndexError, KeyError):
                     r_opportunity = 0.0
 
-        # Calculate Final Composite Reward
+        # NEW: Adjust reward weights to prioritize entry and opportunity cost
+        self.reward_weights = {
+            'cycle': 1.0, 'time': 0.001, 'unrealized': 0.01,
+            'drawdown': 0.1, 'opportunity': 0.5, 'entry': 1.0
+        }
+
+        # MODIFIED: Update the final composite reward calculation
         final_reward = (
             self.reward_weights['cycle'] * r_cycle +
             self.reward_weights['time'] * r_time +
             self.reward_weights['unrealized'] * r_unrealized +
-            self.reward_weights['drawdown'] * r_drawdown -
-            self.reward_weights['opportunity'] * r_opportunity  # Note the subtraction
+            self.reward_weights['drawdown'] * r_drawdown +
+            self.reward_weights['opportunity'] * r_opportunity +
+            self.reward_weights['entry'] * r_entry
         )
 
         return final_reward
@@ -398,7 +391,11 @@ class TradingEnvironment:
         # Handle any remaining NaN values
         observation = np.nan_to_num(np.asarray(observation), nan=0.0)
 
-        return observation.astype(np.float32)
+        # NEW: Append the current position status to the feature vector
+        # self.position_status is 0 for flat, 1 for long
+        full_observation = np.append(observation, self.position_status)
+
+        return full_observation.astype(np.float32)
 
     def _get_current_price(self) -> float:
         """
