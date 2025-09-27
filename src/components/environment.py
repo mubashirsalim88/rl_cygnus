@@ -45,7 +45,7 @@ class TradingEnvironment:
         self.action_space_size = 3
 
         # Composite reward function weights
-        self.reward_weights = {'cycle': 1.0, 'time': 0.001, 'unrealized': 0.01, 'drawdown': 0.1}
+        self.reward_weights = {'cycle': 1.0, 'time': 0.001, 'unrealized': 0.01, 'drawdown': 0.1, 'opportunity': 0.1}
 
         # Validate DataFrame contains required columns
         if 'close' not in self.df.columns:
@@ -322,7 +322,7 @@ class TradingEnvironment:
             Weighted combination of cycle, time, unrealized, and drawdown rewards
         """
         # Initialize all reward components to 0
-        r_cycle, r_time, r_unrealized, r_drawdown = 0.0, 0.0, 0.0, 0.0
+        r_cycle, r_time, r_unrealized, r_drawdown, r_opportunity = 0.0, 0.0, 0.0, 0.0, 0.0
 
         # R(cycle) - Event-Driven, on SELL only
         if action == 2 and execution_price > 0 and entry_price_for_cycle > 0:  # SELL just happened successfully
@@ -344,12 +344,32 @@ class TradingEnvironment:
             drawdown = (self.high_water_mark - current_price) / self.high_water_mark
             r_drawdown = -drawdown if drawdown > 0 else 0.0
 
+        # R(opportunity) - Penalty for missing opportunities during clear uptrends
+        if self.position_status == 0:  # Only when flat/not in position
+            current_price = self._get_current_price()
+
+            # Check if EMA_200 column exists and get trend signal
+            if 'EMA_200' in self.df.columns and self.current_step > 0:
+                try:
+                    ema_200 = self.df.iloc[self.current_step]['EMA_200']
+                    prev_price = self.df.iloc[self.current_step - 1]['close']
+
+                    # Calculate log return for current step
+                    log_return = np.log(current_price / prev_price)
+
+                    # Apply opportunity cost penalty if in clear uptrend and missing gains
+                    if current_price > ema_200 and log_return > 0:
+                        r_opportunity = log_return  # Penalty equals the missed profit
+                except (IndexError, KeyError):
+                    r_opportunity = 0.0
+
         # Calculate Final Composite Reward
         final_reward = (
             self.reward_weights['cycle'] * r_cycle +
             self.reward_weights['time'] * r_time +
             self.reward_weights['unrealized'] * r_unrealized +
-            self.reward_weights['drawdown'] * r_drawdown
+            self.reward_weights['drawdown'] * r_drawdown -
+            self.reward_weights['opportunity'] * r_opportunity  # Note the subtraction
         )
 
         return final_reward

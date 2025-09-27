@@ -95,7 +95,10 @@ def get_feature_config():
 
             # MACD indicators with different configurations
             {'indicator': 'MACD', 'fast': 12, 'slow': 26, 'signal': 9},
-            {'indicator': 'MACD', 'fast': 24, 'slow': 52, 'signal': 18}
+            {'indicator': 'MACD', 'fast': 24, 'slow': 52, 'signal': 18},
+
+            # EMA indicators for trend identification
+            {'indicator': 'EMA', 'period': 200}
         ],
 
         'regime': {

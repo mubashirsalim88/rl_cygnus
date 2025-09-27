@@ -79,6 +79,12 @@ class FeatureEngine:
                     self.df[histogram_col] = macd_data.iloc[:, 1]  # MACD histogram
                     self.df[signal_col] = macd_data.iloc[:, 2]  # Signal line
 
+            elif indicator == 'EMA':
+                period = config.get('period', 20)
+                ema = ta.ema(self.df['close'], length=period)
+                if ema is not None:
+                    self.df[f'EMA_{period}'] = ema
+
             else:
                 print(f"Warning: Indicator '{indicator}' not implemented yet")
 
