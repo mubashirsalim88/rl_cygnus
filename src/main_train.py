@@ -22,6 +22,29 @@ from components.agent import TD3Agent
 from components.replay_buffer import ReplayBuffer
 
 
+def continuous_to_discrete_action(continuous_action: float) -> int:
+    """
+    Convert continuous action from TD3 to discrete action for environment.
+
+    Args:
+        continuous_action: Float value in range [-1, 1] from TD3 agent
+
+    Returns:
+        Discrete action: 0 (HOLD), 1 (BUY), or 2 (SELL)
+
+    Mapping:
+        [-1, -0.33] -> 2 (SELL)
+        [-0.33, 0.33] -> 0 (HOLD)
+        [0.33, 1] -> 1 (BUY)
+    """
+    if continuous_action <= -0.33:
+        return 2  # SELL
+    elif continuous_action >= 0.33:
+        return 1  # BUY
+    else:
+        return 0  # HOLD
+
+
 def setup_logging() -> logging.Logger:
     """Set up logging configuration for training."""
     logging.basicConfig(
@@ -179,8 +202,11 @@ def run_training(
                     # Agent policy with exploration noise
                     action = agent.select_action(state, add_noise=True, noise_scale=0.1)
 
+                # Convert continuous action to discrete action
+                discrete_action = continuous_to_discrete_action(action[0])
+
                 # Execute action in environment
-                next_state, reward, done, info = env.step(action[0])
+                next_state, reward, done, info = env.step(discrete_action)
 
                 # Store transition in replay buffer
                 replay_buffer.add(state, action, next_state, reward, done)
