@@ -24,9 +24,9 @@ class TradingEnvironment:
     BUY = 1
     SELL = 2
 
-    def __init__(self, df: pd.DataFrame, initial_balance: float = 10000.0, commission_rate: float = 0.001, slippage_factor: float = 0.0005, latency: int = 2, reward_weights: dict = None, loss_aversion_coef: float = 2.0):
+    def __init__(self, df: pd.DataFrame, initial_balance: float = 10000.0, commission_rate: float = 0.001, slippage_factor: float = 0.0005, latency: int = 2):
         """
-        Initialize the trading environment with transaction costs, slippage, and latency.
+        Initialize the trading environment with discrete action space and state-dependent actions.
 
         Args:
             df: DataFrame containing processed features from FeatureEngine
@@ -34,8 +34,6 @@ class TradingEnvironment:
             commission_rate: Commission rate for trades (default: 0.001 = 0.1%)
             slippage_factor: Factor determining slippage magnitude (default: 0.0005 = 0.05%)
             latency: Observation delay in time steps (default: 2 steps)
-            reward_weights: Dictionary containing weights for reward components (default: None)
-            loss_aversion_coef: Coefficient for loss aversion in profit rewards (default: 2.0)
         """
         self.df = df.copy()
         self.initial_balance = initial_balance
@@ -43,10 +41,11 @@ class TradingEnvironment:
         self.slippage_factor = slippage_factor
         self.latency = latency
 
-        # Multi-objective reward system parameters
-        default_weights = {'profit': 1.5, 'hold': 0.0001, 'risk': 0.0}
-        self.reward_weights = reward_weights if reward_weights is not None else default_weights
-        self.loss_aversion_coef = loss_aversion_coef
+        # Define discrete action space: {0: HOLD, 1: BUY, 2: SELL}
+        self.action_space_size = 3
+
+        # Composite reward function weights
+        self.reward_weights = {'cycle': 1.0, 'time': 0.001, 'unrealized': 0.01, 'drawdown': 0.1}
 
         # Validate DataFrame contains required columns
         if 'close' not in self.df.columns:
@@ -65,11 +64,11 @@ class TradingEnvironment:
         self.portfolio_value: float = initial_balance
         self.previous_portfolio_value: float = initial_balance
 
-        # Multi-objective reward tracking variables
-        self.position_entry_price: float = 0.0
-        self.steps_in_position: int = 0
-        self.peak_portfolio_value: float = initial_balance
-        self.max_drawdown: float = 0.0
+        # New state-tracking variables for complete trade cycles
+        self.position_status = 0  # 0 for flat, 1 for long
+        self.entry_price = 0.0
+        self.steps_in_trade = 0
+        self.high_water_mark = 0.0  # Peak price during the current trade
 
         # Trading history for analysis
         self.history: List[Dict[str, Any]] = []
@@ -96,11 +95,11 @@ class TradingEnvironment:
         self.portfolio_value = self.initial_balance
         self.previous_portfolio_value = self.initial_balance
 
-        # Reset multi-objective reward tracking variables
-        self.position_entry_price = 0.0
-        self.steps_in_position = 0
-        self.peak_portfolio_value = self.initial_balance
-        self.max_drawdown = 0.0
+        # Reset new state-tracking variables for complete trade cycles
+        self.position_status = 0  # 0 for flat, 1 for long
+        self.entry_price = 0.0
+        self.steps_in_trade = 0
+        self.high_water_mark = 0.0  # Peak price during the current trade
 
         # Clear trading history
         self.history = []
@@ -108,13 +107,12 @@ class TradingEnvironment:
         # Return initial observation (will be from step 0 due to latency handling)
         return self._get_observation()
 
-    def step(self, action: float) -> Tuple[np.ndarray, float, bool, Dict[str, Any]]:
+    def step(self, action: int) -> Tuple[np.ndarray, float, bool, Dict[str, Any]]:
         """
-        Execute one step in the environment with latency-delayed observations.
+        Execute one step in the environment with discrete actions and latency-delayed observations.
 
         Args:
-            action: Continuous action value between -1 and 1
-                   -1 = Full SELL, 0 = HOLD, +1 = Full BUY
+            action: Integer action {0: HOLD, 1: BUY, 2: SELL}
 
         Returns:
             Tuple of (next_observation, reward, done, info)
@@ -124,21 +122,21 @@ class TradingEnvironment:
             but receives observations from step (t+1-latency) as next_observation,
             simulating realistic market data delays.
         """
-        # Validate action range - accept any numeric type
-        if not isinstance(action, (int, float, np.integer, np.floating)):
-            raise ValueError(f"Action must be a number, got {type(action)}")
+        # Validate action is integer and in valid range
+        if not isinstance(action, (int, np.integer)):
+            raise ValueError(f"Action must be an integer, got {type(action)}")
 
-        # Convert to float and clamp action to valid range
-        action = float(np.clip(action, -1.0, 1.0))
+        # Clamp action to valid discrete range
+        action = int(np.clip(action, 0, 2))
 
         # Store previous portfolio value for reward calculation
         self.previous_portfolio_value = self.portfolio_value
 
-        # Execute the trading action
-        self._take_action(action)
+        # Execute the trading action and get execution price and entry price for cycle reward
+        execution_price, entry_price_for_cycle = self._take_action(action)
 
-        # Calculate reward based on portfolio performance
-        reward = self._get_reward(action)
+        # Calculate reward based on composite reward function
+        reward = self._get_reward(action, execution_price, entry_price_for_cycle)
 
         # Check if episode is done (reached end of data)
         done = self.current_step >= len(self.df) - 1
@@ -159,32 +157,41 @@ class TradingEnvironment:
             'shares_held': self.shares_held,
             'portfolio_value': self.portfolio_value,
             'current_price': self._get_current_price(),
-            'step': self.current_step
+            'step': self.current_step,
+            'position_status': self.position_status,
+            'entry_price': self.entry_price,
+            'steps_in_trade': self.steps_in_trade
         }
 
         return next_observation, reward, done, info
 
-    def _take_action(self, action: float) -> None:
+    def _take_action(self, action: int) -> Tuple[float, float]:
         """
-        Execute a trading action with transaction costs and slippage.
+        Execute a state-dependent discrete trading action.
 
         Args:
-            action: Continuous action value between -1 and 1
-                   -1 = Full SELL, 0 = HOLD, +1 = Full BUY
+            action: Integer action {0: HOLD, 1: BUY, 2: SELL}
+
+        Returns:
+            tuple: (execution_price, entry_price_for_cycle_reward)
+                execution_price: The price at which the trade was executed (0 for HOLD or invalid actions)
+                entry_price_for_cycle_reward: Entry price for completed trade (0 if no trade completed)
 
         Note:
-            All BUY and SELL actions incur commission costs and slippage penalties.
-            Slippage is calculated based on trade size relative to recent volume.
+            Actions are state-dependent:
+            - BUY (1): Only valid when flat (position_status == 0), uses 100% of balance
+            - SELL (2): Only valid when in position (position_status == 1), sells 100% of shares
+            - HOLD (0): Always valid, does nothing
         """
         current_price = self._get_current_price()
+        execution_price = 0.0
+        entry_price_for_cycle = 0.0
 
-        # Convert continuous action to trade intention
-        if action > 0.1:  # Buy threshold
-            # Scale action to determine buy amount (action = 1.0 means buy with full balance)
-            buy_fraction = action
-            if self.balance > 0:
-                # Calculate how much of balance to use for buying
-                available_balance = self.balance * buy_fraction
+        if action == 1:  # BUY
+            # Only execute if agent is currently flat
+            if self.position_status == 0 and self.balance > 0:
+                # Use 100% of available balance for buying
+                available_balance = self.balance
 
                 # First estimate shares we can afford
                 initial_shares_estimate = available_balance / (current_price * (1 + self.commission_rate))
@@ -201,42 +208,56 @@ class TradingEnvironment:
                 trade_value = shares_to_buy * final_execution_price
                 commission_cost = trade_value * self.commission_rate
 
-                # Track position entry price when opening a new position
-                if self.shares_held == 0.0:
-                    self.position_entry_price = final_execution_price
-                    self.steps_in_position = 0
-
+                # Execute the trade
                 self.shares_held += shares_to_buy
                 self.balance -= (trade_value + commission_cost)
 
-        elif action < -0.1:  # Sell threshold
-            # Scale action to determine sell amount (action = -1.0 means sell all shares)
-            sell_fraction = abs(action)
-            if self.shares_held > 0:
-                shares_to_sell = self.shares_held * sell_fraction
+                # Update state tracking for new position
+                self.position_status = 1
+                self.entry_price = final_execution_price
+                self.high_water_mark = final_execution_price
+                self.steps_in_trade = 0
 
-                # Get execution price with slippage for the number of shares we're selling
+                execution_price = final_execution_price
+
+        elif action == 2:  # SELL
+            # Only execute if agent is in a position
+            if self.position_status == 1 and self.shares_held > 0:
+                # Store entry price before resetting for cycle reward calculation
+                entry_price_for_cycle = self.entry_price
+
+                # Sell 100% of currently held shares
+                shares_to_sell = self.shares_held
+
+                # Get execution price with slippage
                 execution_price = self._get_execution_price(shares_to_sell, 'sell')
 
                 sale_value = shares_to_sell * execution_price
                 commission_cost = sale_value * self.commission_rate
 
+                # Execute the trade
                 self.balance += (sale_value - commission_cost)
-                self.shares_held -= shares_to_sell
+                self.shares_held = 0.0
 
-                # Reset position trackers when position is fully closed
-                if abs(self.shares_held) < 1e-8:  # Near zero check for floating point precision
-                    self.position_entry_price = 0.0
-                    self.steps_in_position = 0
+                # Reset all cycle trackers
+                self.position_status = 0
+                self.entry_price = 0.0
+                self.steps_in_trade = 0
+                self.high_water_mark = 0.0
 
-        # For HOLD action (-0.1 <= action <= 0.1), no changes to balance or shares
+        # For HOLD action (0) or invalid actions, do nothing
 
         # Update portfolio value (use current market price, not execution price)
         self.portfolio_value = self.balance + (self.shares_held * current_price)
 
-        # Increment holding counter if in a position
-        if self.shares_held > 0:
-            self.steps_in_position += 1
+        # Update trade state if in position
+        if self.position_status == 1:
+            self.steps_in_trade += 1
+            # Update high water mark during the trade
+            if current_price > self.high_water_mark:
+                self.high_water_mark = current_price
+
+        return execution_price, entry_price_for_cycle
 
     def _get_execution_price(self, shares_traded: float, trade_type: str) -> float:
         """
@@ -288,56 +309,47 @@ class TradingEnvironment:
 
         return execution_price
 
-    def _get_reward(self, action: float) -> float:
+    def _get_reward(self, action: int, execution_price: float, entry_price_for_cycle: float) -> float:
         """
-        Calculate multi-objective reward for the current step.
+        Calculate composite reward using multi-objective reward function.
 
         Args:
-            action: The action taken this step to determine if profit event occurred
+            action: The discrete action taken this step {0: HOLD, 1: BUY, 2: SELL}
+            execution_price: The price at which the trade was executed (0 for HOLD/invalid actions)
+            entry_price_for_cycle: Entry price for completed trade (0 if no trade completed)
 
         Returns:
-            Weighted combination of profit, holding, and risk rewards
+            Weighted combination of cycle, time, unrealized, and drawdown rewards
         """
-        # Calculate base metrics
-        portfolio_change = self.portfolio_value - self.previous_portfolio_value
+        # Initialize all reward components to 0
+        r_cycle, r_time, r_unrealized, r_drawdown = 0.0, 0.0, 0.0, 0.0
 
-        # Update peak portfolio value and max drawdown
-        if self.portfolio_value > self.peak_portfolio_value:
-            self.peak_portfolio_value = self.portfolio_value
+        # R(cycle) - Event-Driven, on SELL only
+        if action == 2 and execution_price > 0 and entry_price_for_cycle > 0:  # SELL just happened successfully
+            # Calculate net log return, including costs for both buy and sell
+            transaction_cost = 2 * np.log(1 - self.commission_rate)
+            r_cycle = (np.log(execution_price) - np.log(entry_price_for_cycle)) + transaction_cost
 
-        current_drawdown = (self.peak_portfolio_value - self.portfolio_value) / self.peak_portfolio_value
-        if current_drawdown > self.max_drawdown:
-            self.max_drawdown = current_drawdown
+        # Shaping Rewards - Per-Step, only when IN a position
+        if self.position_status == 1:
+            # R(time) - Penalty for holding
+            r_time = -np.log(1 + self.steps_in_trade)
 
-        # Initialize reward components
-        r_profit = 0.0
-        r_hold = 0.0
-        r_risk = 0.0
-
-        # r_profit: Event-driven reward for trade completion
-        if action < -0.1 and self.position_entry_price > 0:  # SELL action and we had a position
+            # R(unrealized) - Incentive for holding profitable trades
             current_price = self._get_current_price()
-            if current_price > self.position_entry_price:
-                # Profitable trade - log return
-                r_profit = np.log(current_price / self.position_entry_price)
-            else:
-                # Loss trade - log return with loss aversion
-                r_profit = self.loss_aversion_coef * np.log(current_price / self.position_entry_price)
+            unrealized_return = (current_price - self.entry_price) / self.entry_price
+            r_unrealized = unrealized_return
 
-        # r_hold: Time-based penalty for holding positions
-        if self.shares_held > 0:
-            r_hold = -np.log(1 + self.steps_in_position)
-        else:
-            r_hold = 0.0
+            # R(drawdown) - Penalty for price falling from trade's peak
+            drawdown = (self.high_water_mark - current_price) / self.high_water_mark
+            r_drawdown = -drawdown if drawdown > 0 else 0.0
 
-        # r_risk: Drawdown penalty
-        r_risk = -self.max_drawdown
-
-        # Calculate final weighted reward
+        # Calculate Final Composite Reward
         final_reward = (
-            self.reward_weights['profit'] * r_profit +
-            self.reward_weights['hold'] * r_hold +
-            self.reward_weights['risk'] * r_risk
+            self.reward_weights['cycle'] * r_cycle +
+            self.reward_weights['time'] * r_time +
+            self.reward_weights['unrealized'] * r_unrealized +
+            self.reward_weights['drawdown'] * r_drawdown
         )
 
         return final_reward
