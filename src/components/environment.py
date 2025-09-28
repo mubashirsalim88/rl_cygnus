@@ -73,8 +73,8 @@ class TradingEnvironment:
         # Trading history for analysis
         self.history: List[Dict[str, Any]] = []
 
-        # Get feature columns (exclude 'close' as it's used for pricing)
-        self.feature_columns = [col for col in self.df.columns if col != 'close']
+        # Get feature columns (exclude 'close' and 'timestamp' as they're not numeric features)
+        self.feature_columns = [col for col in self.df.columns if col not in ['close', 'timestamp']]
         # The number of features is the original count + 1 (for position_status)
         self.n_features = len(self.feature_columns) + 1
 
