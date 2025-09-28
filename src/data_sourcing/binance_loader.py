@@ -130,7 +130,7 @@ class BinanceLoader:
         except Exception as e:
             raise ConnectionError(f"Failed to fetch historical data: {e}")
 
-    def save_to_csv(self, df: pd.DataFrame, symbol: str, interval: str, filename: str = None) -> str:
+    def save_to_csv(self, df: pd.DataFrame, symbol: str, interval: str, filename: Optional[str] = None) -> str:
         """
         Save DataFrame to CSV file in the data/raw/ directory.
 

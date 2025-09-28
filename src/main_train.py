@@ -3,6 +3,7 @@ import numpy as np
 import logging
 import time
 import os
+from typing import Optional
 
 from components.environment import TradingEnvironment
 from components.agent import DuelingDDQNAgent
@@ -28,7 +29,7 @@ def run_training(
     start_timesteps: int = 25000,
     max_timesteps: int = 1_000_000,
     save_freq: int = 10,
-    logger: logging.Logger = None
+    logger: Optional[logging.Logger] = None
 ):
     """Main training loop for the Dueling DDQN agent."""
     if not logger:
@@ -71,6 +72,7 @@ def run_training(
     total_timesteps = 0
     best_episode_reward = -np.inf
     training_history = []
+    epsilon = epsilon_start  # Initialize epsilon
 
     logger.info(f"Starting training for {num_episodes} episodes or {max_timesteps} timesteps.")
 
@@ -81,11 +83,13 @@ def run_training(
         done = False
 
         while not done and total_timesteps < max_timesteps:
+            # Update epsilon for current timestep
+            epsilon = max(epsilon_end, epsilon_start - (epsilon_start - epsilon_end) * (total_timesteps / epsilon_decay_steps))
+
             # Action selection
             if total_timesteps < start_timesteps:
                 action = np.random.randint(action_dim)
             else:
-                epsilon = max(epsilon_end, epsilon_start - (epsilon_start - epsilon_end) * (total_timesteps / epsilon_decay_steps))
                 action = agent.select_action(state, epsilon)
 
             # Environment step
