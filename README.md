@@ -1,11 +1,11 @@
 # RL Cygnus
 
-A comprehensive reinforcement learning system for cryptocurrency trading using TD3 (Twin Delayed Deep Deterministic Policy Gradient) algorithm.
+A comprehensive reinforcement learning system for cryptocurrency trading using Dueling Double Deep Q-Network (DDQN) algorithm.
 
 ## Features
 
 - **Advanced Trading Environment**: Realistic market simulation with commission costs, slippage, and latency
-- **TD3 Agent**: State-of-the-art actor-critic reinforcement learning algorithm
+- **Dueling DDQN Agent**: State-of-the-art value-based reinforcement learning algorithm for discrete action spaces
 - **Feature Engineering**: Comprehensive technical indicators and market regime features
 - **Data Pipeline**: Automated data collection from Binance API with feature processing
 - **Training Infrastructure**: Complete training loop with experience replay and model checkpointing
@@ -39,7 +39,7 @@ rl_cygnus/
 ├── src/
 │   ├── components/
 │   │   ├── environment.py      # Trading environment with market frictions
-│   │   ├── agent.py           # TD3 agent implementation
+│   │   ├── agent.py           # Dueling DDQN agent implementation
 │   │   ├── feature_engineering.py  # Technical indicators and features
 │   │   └── replay_buffer.py   # Experience replay buffer
 │   ├── data_sourcing/
@@ -69,12 +69,12 @@ rl_cygnus/
 
 - **Realistic Market Conditions**: Commission fees, price slippage, and data latency
 - **Comprehensive State Space**: Technical indicators, market regime features, and price derivatives
-- **Flexible Action Space**: Continuous action space for position sizing
+- **Discrete Action Space**: Three actions for trading decisions (BUY, HOLD, SELL)
 - **Portfolio Tracking**: Real-time portfolio value and performance metrics
 
 ## Agent Features
 
-- **TD3 Algorithm**: Twin critics, delayed policy updates, and target policy smoothing
+- **Dueling DDQN Algorithm**: Dueling architecture with double Q-learning for stable value estimation
 - **Experience Replay**: Large replay buffer for stable learning
 - **Model Management**: Automatic checkpointing and best model saving
 - **Comprehensive Logging**: Training metrics and performance tracking
