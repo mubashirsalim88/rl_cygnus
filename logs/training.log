@@ -3,3 +3,223 @@
 2025-09-28 12:50:35,293 - INFO - ================================================================================
 2025-09-28 12:50:35,889 - INFO - Loaded data: BTCUSDT-5m_2023-01-01_to_2023-12-31_features.csv, shape: (104817, 26)
 2025-09-28 12:50:38,574 - INFO - Starting training for 100 episodes or 1000000 timesteps.
+2025-09-28 07:22:45,509 - INFO - ================================================================================
+2025-09-28 07:22:45,509 - INFO - STARTING NEW TRAINING RUN - ALGORITHM: DUELING DOUBLE DQN
+2025-09-28 07:22:45,509 - INFO - ================================================================================
+2025-09-28 07:22:46,349 - INFO - Loaded data: BTCUSDT-5m_2023-01-01_to_2023-12-31_features.csv, shape: (104817, 26)
+2025-09-28 07:22:47,648 - INFO - Starting training for 100 episodes or 1000000 timesteps.
+2025-09-28 07:34:30,787 - INFO - ================================================================================
+2025-09-28 07:34:30,787 - INFO - STARTING NEW TRAINING RUN - ALGORITHM: DUELING DOUBLE DQN
+2025-09-28 07:34:30,787 - INFO - ================================================================================
+2025-09-28 07:34:31,653 - INFO - Loaded data: BTCUSDT-5m_2023-01-01_to_2023-12-31_features.csv, shape: (104817, 26)
+2025-09-28 07:34:32,902 - INFO - Starting training for 100 episodes or 1000000 timesteps.
+2025-09-28 07:38:40,094 - INFO - Step 50000: Training Loss=48187.0156, Epsilon=0.901
+2025-09-28 07:40:01,611 - INFO - Step 55000: Training Loss=13.6649, Epsilon=0.891
+2025-09-28 07:41:26,277 - INFO - Step 60000: Training Loss=2.2404, Epsilon=0.881
+2025-09-28 07:42:50,396 - INFO - Step 65000: Training Loss=0.0929, Epsilon=0.871
+2025-09-28 07:44:16,132 - INFO - Step 70000: Training Loss=0.8736, Epsilon=0.861
+2025-09-28 07:45:39,315 - INFO - Step 75000: Training Loss=0.0377, Epsilon=0.852
+2025-09-28 07:47:03,127 - INFO - Step 80000: Training Loss=0.6893, Epsilon=0.842
+2025-09-28 07:48:25,493 - INFO - Step 85000: Training Loss=6.1891, Epsilon=0.832
+2025-09-28 07:49:49,168 - INFO - Step 90000: Training Loss=0.0320, Epsilon=0.822
+2025-09-28 07:51:13,954 - INFO - Step 95000: Training Loss=0.0055, Epsilon=0.812
+2025-09-28 07:52:39,277 - INFO - Step 100000: Training Loss=0.1019, Epsilon=0.802
+2025-09-28 07:53:59,106 - INFO - Ep 1/100 | Steps: 104618 | Reward:   239.75 | Portfolio: $      0.00 | Return:    0.00% | Mkt Return:    0.00%
+2025-09-28 07:53:59,116 - INFO - *** New best model saved with reward: 239.75 ***
+2025-09-28 07:54:05,942 - INFO - Step 105000: Training Loss=0.1828, Epsilon=0.792
+2025-09-28 07:55:34,951 - INFO - Step 110000: Training Loss=0.5254, Epsilon=0.782
+2025-09-28 07:57:04,092 - INFO - Step 115000: Training Loss=0.0023, Epsilon=0.772
+2025-09-28 07:58:34,347 - INFO - Step 120000: Training Loss=0.0234, Epsilon=0.762
+2025-09-28 08:00:07,398 - INFO - Step 125000: Training Loss=0.0013, Epsilon=0.753
+2025-09-28 08:01:40,601 - INFO - Step 130000: Training Loss=0.0119, Epsilon=0.743
+2025-09-28 08:03:14,675 - INFO - Step 135000: Training Loss=0.0017, Epsilon=0.733
+2025-09-28 08:04:48,786 - INFO - Step 140000: Training Loss=0.0048, Epsilon=0.723
+2025-09-28 08:06:21,118 - INFO - Step 145000: Training Loss=0.0035, Epsilon=0.713
+2025-09-28 08:07:53,417 - INFO - Step 150000: Training Loss=0.0019, Epsilon=0.703
+2025-09-28 08:09:27,310 - INFO - Step 155000: Training Loss=0.0012, Epsilon=0.693
+2025-09-28 08:10:59,780 - INFO - Step 160000: Training Loss=0.0005, Epsilon=0.683
+2025-09-28 08:12:32,244 - INFO - Step 165000: Training Loss=0.0007, Epsilon=0.673
+2025-09-28 08:14:04,160 - INFO - Step 170000: Training Loss=0.0000, Epsilon=0.663
+2025-09-28 08:15:38,263 - INFO - Step 175000: Training Loss=0.0000, Epsilon=0.654
+2025-09-28 08:17:11,310 - INFO - Step 180000: Training Loss=0.0000, Epsilon=0.644
+2025-09-28 08:18:43,536 - INFO - Step 185000: Training Loss=0.0000, Epsilon=0.634
+2025-09-28 08:20:16,045 - INFO - Step 190000: Training Loss=0.0000, Epsilon=0.624
+2025-09-28 08:21:48,231 - INFO - Step 195000: Training Loss=0.0000, Epsilon=0.614
+2025-09-28 08:23:20,861 - INFO - Step 200000: Training Loss=0.0000, Epsilon=0.604
+2025-09-28 08:24:55,004 - INFO - Step 205000: Training Loss=0.0000, Epsilon=0.594
+2025-09-28 08:26:13,697 - INFO - Ep 2/100 | Steps: 104618 | Reward:   359.75 | Portfolio: $      0.00 | Return:    0.00% | Mkt Return:    0.00%
+2025-09-28 08:26:13,704 - INFO - *** New best model saved with reward: 359.75 ***
+2025-09-28 08:26:27,980 - INFO - Step 210000: Training Loss=0.0000, Epsilon=0.584
+2025-09-28 08:28:01,084 - INFO - Step 215000: Training Loss=0.0000, Epsilon=0.574
+2025-09-28 08:29:34,883 - INFO - Step 220000: Training Loss=0.0000, Epsilon=0.564
+2025-09-28 08:31:07,343 - INFO - Step 225000: Training Loss=0.0000, Epsilon=0.555
+2025-09-28 08:32:40,321 - INFO - Step 230000: Training Loss=0.0000, Epsilon=0.545
+2025-09-28 08:34:15,139 - INFO - Step 235000: Training Loss=0.0000, Epsilon=0.535
+2025-09-28 08:35:53,109 - INFO - Step 240000: Training Loss=0.0000, Epsilon=0.525
+2025-09-28 08:37:28,351 - INFO - Step 245000: Training Loss=0.0000, Epsilon=0.515
+2025-09-28 08:39:04,736 - INFO - Step 250000: Training Loss=0.0000, Epsilon=0.505
+2025-09-28 08:40:38,920 - INFO - Step 255000: Training Loss=0.0000, Epsilon=0.495
+2025-09-28 08:42:12,575 - INFO - Step 260000: Training Loss=0.0000, Epsilon=0.485
+2025-09-28 08:43:45,830 - INFO - Step 265000: Training Loss=0.0000, Epsilon=0.475
+2025-09-28 08:45:20,506 - INFO - Step 270000: Training Loss=0.0000, Epsilon=0.465
+2025-09-28 08:46:54,216 - INFO - Step 275000: Training Loss=0.0000, Epsilon=0.456
+2025-09-28 08:48:28,035 - INFO - Step 280000: Training Loss=0.0000, Epsilon=0.446
+2025-09-28 08:50:01,383 - INFO - Step 285000: Training Loss=0.0000, Epsilon=0.436
+2025-09-28 08:51:34,853 - INFO - Step 290000: Training Loss=0.0000, Epsilon=0.426
+2025-09-28 08:53:08,513 - INFO - Step 295000: Training Loss=0.0000, Epsilon=0.416
+2025-09-28 08:54:47,953 - INFO - Step 300000: Training Loss=0.0000, Epsilon=0.406
+2025-09-28 08:56:41,716 - INFO - Step 305000: Training Loss=0.0000, Epsilon=0.396
+2025-09-28 08:58:20,852 - INFO - Step 310000: Training Loss=0.0000, Epsilon=0.386
+2025-09-28 08:59:35,264 - INFO - Ep 3/100 | Steps: 104618 | Reward:   524.87 | Portfolio: $      0.00 | Return:    0.00% | Mkt Return:    0.00%
+2025-09-28 08:59:35,284 - INFO - *** New best model saved with reward: 524.87 ***
+2025-09-28 08:59:57,024 - INFO - Step 315000: Training Loss=0.0000, Epsilon=0.376
+2025-09-28 09:01:30,533 - INFO - Step 320000: Training Loss=0.0000, Epsilon=0.366
+2025-09-28 09:03:02,629 - INFO - Step 325000: Training Loss=0.0028, Epsilon=0.357
+2025-09-28 09:04:36,614 - INFO - Step 330000: Training Loss=0.0000, Epsilon=0.347
+2025-09-28 09:06:09,045 - INFO - Step 335000: Training Loss=0.0000, Epsilon=0.337
+2025-09-28 09:07:42,870 - INFO - Step 340000: Training Loss=0.0000, Epsilon=0.327
+2025-09-28 09:09:15,556 - INFO - Step 345000: Training Loss=0.0000, Epsilon=0.317
+2025-09-28 09:10:47,539 - INFO - Step 350000: Training Loss=0.0000, Epsilon=0.307
+2025-09-28 09:12:21,546 - INFO - Step 355000: Training Loss=0.0000, Epsilon=0.297
+2025-09-28 09:13:53,326 - INFO - Step 360000: Training Loss=0.0000, Epsilon=0.287
+2025-09-28 09:15:28,895 - INFO - Step 365000: Training Loss=0.0000, Epsilon=0.277
+2025-09-28 09:17:02,993 - INFO - Step 370000: Training Loss=0.0000, Epsilon=0.267
+2025-09-28 09:18:39,818 - INFO - Step 375000: Training Loss=0.0000, Epsilon=0.258
+2025-09-28 09:20:18,328 - INFO - Step 380000: Training Loss=0.0000, Epsilon=0.248
+2025-09-28 09:21:52,417 - INFO - Step 385000: Training Loss=0.0000, Epsilon=0.238
+2025-09-28 09:23:25,917 - INFO - Step 390000: Training Loss=0.0000, Epsilon=0.228
+2025-09-28 09:25:00,745 - INFO - Step 395000: Training Loss=0.0000, Epsilon=0.218
+2025-09-28 09:26:34,018 - INFO - Step 400000: Training Loss=0.0000, Epsilon=0.208
+2025-09-28 09:28:07,064 - INFO - Step 405000: Training Loss=0.0000, Epsilon=0.198
+2025-09-28 09:29:40,884 - INFO - Step 410000: Training Loss=0.0000, Epsilon=0.188
+2025-09-28 09:31:19,882 - INFO - Step 415000: Training Loss=0.0000, Epsilon=0.178
+2025-09-28 09:32:27,304 - INFO - Ep 4/100 | Steps: 104618 | Reward:   617.02 | Portfolio: $      0.00 | Return:    0.00% | Mkt Return:    0.00%
+2025-09-28 09:32:27,330 - INFO - *** New best model saved with reward: 617.02 ***
+2025-09-28 09:32:56,619 - INFO - Step 420000: Training Loss=0.0000, Epsilon=0.168
+2025-09-28 09:34:32,535 - INFO - Step 425000: Training Loss=0.0000, Epsilon=0.159
+2025-09-28 09:36:07,196 - INFO - Step 430000: Training Loss=0.0000, Epsilon=0.149
+2025-09-28 09:37:42,731 - INFO - Step 435000: Training Loss=0.0000, Epsilon=0.139
+2025-09-28 09:39:17,461 - INFO - Step 440000: Training Loss=0.0000, Epsilon=0.129
+2025-09-28 09:40:52,412 - INFO - Step 445000: Training Loss=0.0000, Epsilon=0.119
+2025-09-28 09:42:26,704 - INFO - Step 450000: Training Loss=0.0000, Epsilon=0.109
+2025-09-28 09:44:01,563 - INFO - Step 455000: Training Loss=0.0000, Epsilon=0.099
+2025-09-28 09:45:40,603 - INFO - Step 460000: Training Loss=0.0000, Epsilon=0.089
+2025-09-28 09:47:16,006 - INFO - Step 465000: Training Loss=0.0000, Epsilon=0.079
+2025-09-28 09:48:50,472 - INFO - Step 470000: Training Loss=0.0000, Epsilon=0.069
+2025-09-28 09:50:24,422 - INFO - Step 475000: Training Loss=0.0000, Epsilon=0.060
+2025-09-28 09:51:58,387 - INFO - Step 480000: Training Loss=0.0000, Epsilon=0.050
+2025-09-28 09:53:32,827 - INFO - Step 485000: Training Loss=0.0000, Epsilon=0.040
+2025-09-28 09:55:08,507 - INFO - Step 490000: Training Loss=0.0000, Epsilon=0.030
+2025-09-28 09:56:42,606 - INFO - Step 495000: Training Loss=0.0000, Epsilon=0.020
+2025-09-28 09:58:15,695 - INFO - Step 500000: Training Loss=0.0000, Epsilon=0.010
+2025-09-28 09:59:49,047 - INFO - Step 505000: Training Loss=0.0000, Epsilon=0.010
+2025-09-28 10:01:22,726 - INFO - Step 510000: Training Loss=0.0000, Epsilon=0.010
+2025-09-28 10:02:56,881 - INFO - Step 515000: Training Loss=0.0000, Epsilon=0.010
+2025-09-28 10:04:32,530 - INFO - Step 520000: Training Loss=0.0000, Epsilon=0.010
+2025-09-28 10:05:31,155 - INFO - Ep 5/100 | Steps: 104618 | Reward:   563.05 | Portfolio: $    196.73 | Return:    0.00% | Mkt Return:    0.00%
+2025-09-28 10:06:07,279 - INFO - Step 525000: Training Loss=0.0000, Epsilon=0.010
+2025-09-28 10:07:44,272 - INFO - Step 530000: Training Loss=0.0000, Epsilon=0.010
+2025-09-28 10:09:24,273 - INFO - Step 535000: Training Loss=0.0000, Epsilon=0.010
+2025-09-28 10:10:59,364 - INFO - Step 540000: Training Loss=0.0000, Epsilon=0.010
+2025-09-28 10:12:33,867 - INFO - Step 545000: Training Loss=0.0000, Epsilon=0.010
+2025-09-28 10:14:08,061 - INFO - Step 550000: Training Loss=0.0000, Epsilon=0.010
+2025-09-28 10:15:44,197 - INFO - Step 555000: Training Loss=0.0000, Epsilon=0.010
+2025-09-28 10:17:18,938 - INFO - Step 560000: Training Loss=0.0000, Epsilon=0.010
+2025-09-28 10:18:53,842 - INFO - Step 565000: Training Loss=0.0000, Epsilon=0.010
+2025-09-28 10:20:29,531 - INFO - Step 570000: Training Loss=0.0000, Epsilon=0.010
+2025-09-28 10:22:05,109 - INFO - Step 575000: Training Loss=0.0000, Epsilon=0.010
+2025-09-28 10:23:39,484 - INFO - Step 580000: Training Loss=0.0000, Epsilon=0.010
+2025-09-28 10:25:15,673 - INFO - Step 585000: Training Loss=0.0000, Epsilon=0.010
+2025-09-28 10:26:50,393 - INFO - Step 590000: Training Loss=0.0000, Epsilon=0.010
+2025-09-28 10:28:25,150 - INFO - Step 595000: Training Loss=0.0000, Epsilon=0.010
+2025-09-28 10:29:59,399 - INFO - Step 600000: Training Loss=0.0000, Epsilon=0.010
+2025-09-28 10:31:33,822 - INFO - Step 605000: Training Loss=0.0000, Epsilon=0.010
+2025-09-28 10:33:08,130 - INFO - Step 610000: Training Loss=0.0000, Epsilon=0.010
+2025-09-28 10:34:46,129 - INFO - Step 615000: Training Loss=0.0000, Epsilon=0.010
+2025-09-28 10:36:25,434 - INFO - Step 620000: Training Loss=0.0000, Epsilon=0.010
+2025-09-28 10:38:00,500 - INFO - Step 625000: Training Loss=0.0000, Epsilon=0.010
+2025-09-28 10:38:51,687 - INFO - Ep 6/100 | Steps: 104618 | Reward:   392.42 | Portfolio: $  11695.93 | Return:    0.00% | Mkt Return:    0.00%
+2025-09-28 10:39:34,765 - INFO - Step 630000: Training Loss=0.0000, Epsilon=0.010
+2025-09-28 10:41:10,766 - INFO - Step 635000: Training Loss=0.0000, Epsilon=0.010
+2025-09-28 10:42:45,659 - INFO - Step 640000: Training Loss=0.0000, Epsilon=0.010
+2025-09-28 10:44:21,781 - INFO - Step 645000: Training Loss=0.0000, Epsilon=0.010
+2025-09-28 10:45:55,994 - INFO - Step 650000: Training Loss=0.0000, Epsilon=0.010
+2025-09-28 10:47:30,878 - INFO - Step 655000: Training Loss=0.0000, Epsilon=0.010
+2025-09-28 10:49:06,113 - INFO - Step 660000: Training Loss=0.0000, Epsilon=0.010
+2025-09-28 10:50:41,072 - INFO - Step 665000: Training Loss=0.0000, Epsilon=0.010
+2025-09-28 10:52:15,384 - INFO - Step 670000: Training Loss=0.0000, Epsilon=0.010
+2025-09-28 10:53:48,734 - INFO - Step 675000: Training Loss=0.0000, Epsilon=0.010
+2025-09-28 10:55:23,442 - INFO - Step 680000: Training Loss=0.0000, Epsilon=0.010
+2025-09-28 10:56:59,414 - INFO - Step 685000: Training Loss=0.0000, Epsilon=0.010
+2025-09-28 10:58:32,456 - INFO - Step 690000: Training Loss=0.0000, Epsilon=0.010
+2025-09-28 11:00:07,101 - INFO - Step 695000: Training Loss=0.0000, Epsilon=0.010
+2025-09-28 11:01:41,296 - INFO - Step 700000: Training Loss=0.0000, Epsilon=0.010
+2025-09-28 11:03:15,916 - INFO - Step 705000: Training Loss=0.0000, Epsilon=0.010
+2025-09-28 11:04:51,390 - INFO - Step 710000: Training Loss=0.0000, Epsilon=0.010
+2025-09-28 11:06:26,075 - INFO - Step 715000: Training Loss=0.0000, Epsilon=0.010
+2025-09-28 11:08:01,504 - INFO - Step 720000: Training Loss=0.0000, Epsilon=0.010
+2025-09-28 11:09:35,868 - INFO - Step 725000: Training Loss=0.0000, Epsilon=0.010
+2025-09-28 11:11:10,520 - INFO - Step 730000: Training Loss=0.0000, Epsilon=0.010
+2025-09-28 11:11:54,679 - INFO - Ep 7/100 | Steps: 104618 | Reward:   368.94 | Portfolio: $  12563.75 | Return:    0.00% | Mkt Return:    0.00%
+2025-09-28 11:12:45,472 - INFO - Step 735000: Training Loss=0.0000, Epsilon=0.010
+2025-09-28 11:14:22,296 - INFO - Step 740000: Training Loss=0.0000, Epsilon=0.010
+2025-09-28 11:15:58,084 - INFO - Step 745000: Training Loss=0.0000, Epsilon=0.010
+2025-09-28 11:17:33,553 - INFO - Step 750000: Training Loss=0.0000, Epsilon=0.010
+2025-09-28 11:19:08,425 - INFO - Step 755000: Training Loss=0.0000, Epsilon=0.010
+2025-09-28 11:20:45,438 - INFO - Step 760000: Training Loss=0.0001, Epsilon=0.010
+2025-09-28 11:22:24,944 - INFO - Step 765000: Training Loss=0.0000, Epsilon=0.010
+2025-09-28 11:24:01,109 - INFO - Step 770000: Training Loss=0.0000, Epsilon=0.010
+2025-09-28 11:25:37,528 - INFO - Step 775000: Training Loss=0.0000, Epsilon=0.010
+2025-09-28 11:27:11,891 - INFO - Step 780000: Training Loss=0.0000, Epsilon=0.010
+2025-09-28 11:28:47,022 - INFO - Step 785000: Training Loss=0.0000, Epsilon=0.010
+2025-09-28 11:30:21,590 - INFO - Step 790000: Training Loss=0.0000, Epsilon=0.010
+2025-09-28 11:31:56,462 - INFO - Step 795000: Training Loss=0.0000, Epsilon=0.010
+2025-09-28 11:33:30,665 - INFO - Step 800000: Training Loss=0.0000, Epsilon=0.010
+2025-09-28 11:35:06,189 - INFO - Step 805000: Training Loss=0.0000, Epsilon=0.010
+2025-09-28 11:36:40,488 - INFO - Step 810000: Training Loss=0.0000, Epsilon=0.010
+2025-09-28 11:38:13,776 - INFO - Step 815000: Training Loss=0.0000, Epsilon=0.010
+2025-09-28 11:39:49,468 - INFO - Step 820000: Training Loss=0.0000, Epsilon=0.010
+2025-09-28 11:41:24,741 - INFO - Step 825000: Training Loss=0.0000, Epsilon=0.010
+2025-09-28 11:43:00,016 - INFO - Step 830000: Training Loss=0.0000, Epsilon=0.010
+2025-09-28 11:44:35,484 - INFO - Step 835000: Training Loss=0.0000, Epsilon=0.010
+2025-09-28 11:45:12,358 - INFO - Ep 8/100 | Steps: 104618 | Reward:   382.02 | Portfolio: $  12473.31 | Return:    0.00% | Mkt Return:    0.00%
+2025-09-28 11:46:09,788 - INFO - Step 840000: Training Loss=0.0000, Epsilon=0.010
+2025-09-28 11:47:44,578 - INFO - Step 845000: Training Loss=0.0000, Epsilon=0.010
+2025-09-28 11:49:19,478 - INFO - Step 850000: Training Loss=0.0000, Epsilon=0.010
+2025-09-28 11:50:55,656 - INFO - Step 855000: Training Loss=0.0000, Epsilon=0.010
+2025-09-28 11:52:30,005 - INFO - Step 860000: Training Loss=0.0000, Epsilon=0.010
+2025-09-28 11:54:03,695 - INFO - Step 865000: Training Loss=0.0000, Epsilon=0.010
+2025-09-28 11:55:42,327 - INFO - Step 870000: Training Loss=0.0000, Epsilon=0.010
+2025-09-28 11:57:17,318 - INFO - Step 875000: Training Loss=0.0000, Epsilon=0.010
+2025-09-28 11:58:52,222 - INFO - Step 880000: Training Loss=0.0000, Epsilon=0.010
+2025-09-28 12:00:27,607 - INFO - Step 885000: Training Loss=0.0001, Epsilon=0.010
+2025-09-28 12:02:01,990 - INFO - Step 890000: Training Loss=0.0000, Epsilon=0.010
+2025-09-28 12:03:35,794 - INFO - Step 895000: Training Loss=0.0000, Epsilon=0.010
+2025-09-28 12:05:13,899 - INFO - Step 900000: Training Loss=0.0000, Epsilon=0.010
+2025-09-28 12:06:48,609 - INFO - Step 905000: Training Loss=0.0000, Epsilon=0.010
+2025-09-28 12:08:22,968 - INFO - Step 910000: Training Loss=0.0000, Epsilon=0.010
+2025-09-28 12:09:57,385 - INFO - Step 915000: Training Loss=0.0000, Epsilon=0.010
+2025-09-28 12:11:31,515 - INFO - Step 920000: Training Loss=0.0000, Epsilon=0.010
+2025-09-28 12:13:07,027 - INFO - Step 925000: Training Loss=0.0000, Epsilon=0.010
+2025-09-28 12:14:41,470 - INFO - Step 930000: Training Loss=0.0000, Epsilon=0.010
+2025-09-28 12:16:15,262 - INFO - Step 935000: Training Loss=0.0000, Epsilon=0.010
+2025-09-28 12:17:50,979 - INFO - Step 940000: Training Loss=0.0000, Epsilon=0.010
+2025-09-28 12:18:20,293 - INFO - Ep 9/100 | Steps: 104618 | Reward:   387.03 | Portfolio: $  11901.07 | Return:    0.00% | Mkt Return:    0.00%
+2025-09-28 12:19:25,679 - INFO - Step 945000: Training Loss=0.0000, Epsilon=0.010
+2025-09-28 12:21:00,021 - INFO - Step 950000: Training Loss=0.0000, Epsilon=0.010
+2025-09-28 12:22:35,569 - INFO - Step 955000: Training Loss=0.0000, Epsilon=0.010
+2025-09-28 12:24:11,685 - INFO - Step 960000: Training Loss=0.0000, Epsilon=0.010
+2025-09-28 12:25:47,025 - INFO - Step 965000: Training Loss=0.0000, Epsilon=0.010
+2025-09-28 12:27:21,461 - INFO - Step 970000: Training Loss=0.0000, Epsilon=0.010
+2025-09-28 12:28:55,873 - INFO - Step 975000: Training Loss=0.0000, Epsilon=0.010
+2025-09-28 12:30:34,984 - INFO - Step 980000: Training Loss=0.0000, Epsilon=0.010
+2025-09-28 12:32:13,375 - INFO - Step 985000: Training Loss=0.0000, Epsilon=0.010
+2025-09-28 12:33:51,748 - INFO - Step 990000: Training Loss=0.0000, Epsilon=0.010
+2025-09-28 12:35:32,595 - INFO - Step 995000: Training Loss=0.0000, Epsilon=0.010
+2025-09-28 12:37:10,805 - INFO - Step 1000000: Training Loss=0.0000, Epsilon=0.010
+2025-09-28 12:37:10,805 - INFO - Ep 10/100 | Steps: 58438 | Reward:   207.02 | Portfolio: $  12103.05 | Return:    0.00% | Mkt Return:    0.00%
+2025-09-28 12:37:10,821 - INFO - Reached max timesteps (1000000). Terminating training.
+2025-09-28 12:37:10,821 - INFO - ================================================================================
+2025-09-28 12:37:10,821 - INFO - TRAINING COMPLETED in 302.63 minutes
+2025-09-28 12:37:10,821 - INFO - ================================================================================
+2025-09-28 12:37:10,908 - INFO - Final model and training history saved successfully.
