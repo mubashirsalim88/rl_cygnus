@@ -1,0 +1,22 @@
+project:
+  name: RL_Cygnus_PPO
+  version: '2.0'
+environment:
+  data_file: BTCUSDT-5m_2023-01-01_to_2023-12-31_features.csv
+  initial_balance: 10000.0
+  commission_rate: 0.001
+  latency: 1
+  profit_bonus: 1.0
+  drawdown_penalty: 0.1
+agent:
+  type: PPO
+  lr: 0.0003
+  gamma: 0.99
+  K_epochs: 4
+  eps_clip: 0.2
+  hidden_dim: 256
+training:
+  num_episodes: 500
+  update_timestep: 2048
+  model_save_freq: 50
+  device: cpu

@@ -1,163 +1,154 @@
+# In src/main_train.py
+
 import pandas as pd
-import numpy as np
 import logging
 import time
 import os
-from typing import Optional
+import hydra
+from omegaconf import DictConfig, OmegaConf
+import mlflow
+import git
 
 from components.environment import TradingEnvironment
-from components.agent import DuelingDDQNAgent
-from components.replay_buffer import ReplayBuffer
+from components.agent_ppo import PPOAgent
 
-# --- CONFIGURATION ---
-LOG_CONFIG = {
-    "level": logging.INFO,
-    "format": "%(asctime)s - %(levelname)s - %(message)s",
-    "filename": "logs/training.log"
-}
+# --- HYDRA + MLFLOW APP ---
 
-def setup_logging():
-    """Set up the logging environment."""
-    os.makedirs("logs", exist_ok=True)
-    logging.basicConfig(**LOG_CONFIG)
-    return logging.getLogger(__name__)
+@hydra.main(config_path="../configs", config_name="config", version_base=None)
+def main(cfg: DictConfig):
+    """
+    Main training function orchestrated by Hydra.
+    All parameters are sourced from the `cfg` object.
+    """
+    # --- MLFLOW SETUP ---
+    mlflow.set_experiment(cfg.project.name)
 
-def run_training(
-    data_file: str,
-    num_episodes: int = 50,
-    batch_size: int = 256,
-    start_timesteps: int = 25000,
-    max_timesteps: int = 1_000_000,
-    save_freq: int = 10,
-    logger: Optional[logging.Logger] = None
-):
-    """Main training loop for the Dueling DDQN agent."""
-    if not logger:
-        logger = setup_logging()
+    with mlflow.start_run() as run:
+        # --- LOGGING SETUP ---
+        # MLflow will manage logging, so we don't need a separate file handler
+        logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
+        logger = logging.getLogger(__name__)
+        logger.info("========================================================")
+        logger.info("STARTING NEW TRAINING RUN - HYDRA + MLFLOW")
+        logger.info(f"Experiment: {cfg.project.name}, Run ID: {run.info.run_id}")
+        logger.info("========================================================")
 
-    logger.info("================================================================================")
-    logger.info("STARTING NEW TRAINING RUN - ALGORITHM: DUELING DOUBLE DQN")
-    logger.info("================================================================================")
+        # Log all hyperparameters from the config file
+        def flatten_dict(d, parent_key='', sep='.'):
+            """Flatten a nested dictionary for MLflow logging."""
+            items = []
+            for k, v in d.items():
+                new_key = f"{parent_key}{sep}{k}" if parent_key else k
+                if isinstance(v, dict):
+                    items.extend(flatten_dict(v, new_key, sep=sep).items())
+                else:
+                    items.append((new_key, v))
+            return dict(items)
 
-    # --- ENVIRONMENT AND AGENT INITIALIZATION ---
-    try:
-        df = pd.read_csv(f"data/processed/{data_file}")
-        logger.info(f"Loaded data: {data_file}, shape: {df.shape}")
-    except FileNotFoundError:
-        logger.error(f"Data file not found: {data_file}. Please run feature engineering script.")
-        return
+        config_dict = OmegaConf.to_container(cfg, resolve=True, throw_on_missing=True)
+        if isinstance(config_dict, dict):
+            flat_params = flatten_dict(config_dict)
+            mlflow.log_params(flat_params)
+        else:
+            logger.warning("Config could not be converted to dictionary for MLflow logging")
 
-    env = TradingEnvironment(df)
-    state_dim = env.n_features
-    action_dim = 3  # BUY (1), HOLD (0), SELL (2)
+        # Log git commit hash for reproducibility
+        try:
+            repo = git.Repo(search_parent_directories=True)
+            commit_hash = repo.head.object.hexsha
+            mlflow.log_param("git_commit_hash", commit_hash)
+            logger.info(f"Git Commit Hash: {commit_hash}")
+        except git.InvalidGitRepositoryError:
+            logger.warning("Not a git repository. Skipping commit hash logging.")
+            mlflow.log_param("git_commit_hash", "N/A")
 
-    agent = DuelingDDQNAgent(
-        state_dim=state_dim,
-        action_dim=action_dim,
-        lr=1e-4,
-        discount=0.99,
-        tau=0.005
-    )
+        # --- DATA & ENVIRONMENT SETUP ---
+        data_path = os.path.join(hydra.utils.get_original_cwd(), 'data', 'processed', cfg.environment.data_file)
+        logger.info(f"Loading data from: {data_path}")
+        df = pd.read_csv(data_path)
 
-    # Replay buffer action_dim can be 1, as we store a single integer action
-    replay_buffer = ReplayBuffer(state_dim=state_dim, action_dim=1, max_size=int(1e6))
-
-    # --- EPSILON-GREEDY EXPLORATION SCHEDULE ---
-    epsilon_start = 1.0
-    epsilon_end = 0.01
-    epsilon_decay_steps = 500000
-
-    # --- TRAINING LOOP ---
-    start_time = time.time()
-    total_timesteps = 0
-    best_episode_reward = -np.inf
-    training_history = []
-    epsilon = epsilon_start  # Initialize epsilon
-
-    logger.info(f"Starting training for {num_episodes} episodes or {max_timesteps} timesteps.")
-
-    for episode in range(1, num_episodes + 1):
-        state = env.reset()
-        episode_reward = 0
-        episode_steps = 0
-        done = False
-
-        while not done and total_timesteps < max_timesteps:
-            # Update epsilon for current timestep
-            epsilon = max(epsilon_end, epsilon_start - (epsilon_start - epsilon_end) * (total_timesteps / epsilon_decay_steps))
-
-            # Action selection
-            if total_timesteps < start_timesteps:
-                action = np.random.randint(action_dim)
-            else:
-                action = agent.select_action(state, epsilon)
-
-            # Environment step
-            next_state, reward, done, info = env.step(action)
-
-            # Store transition in replay buffer (action is an integer)
-            replay_buffer.add(state, np.array([action]), next_state, reward, done)
-
-            state = next_state
-            episode_reward += reward
-            episode_steps += 1
-            total_timesteps += 1
-
-            # Train agent
-            if total_timesteps >= start_timesteps and replay_buffer.is_ready(batch_size):
-                metrics = agent.train(replay_buffer, batch_size)
-                if total_timesteps % 5000 == 0:
-                    logger.info(f"Step {total_timesteps}: Training Loss={metrics['loss']:.4f}, Epsilon={epsilon:.3f}")
-
-        # --- LOGGING AND SAVING ---
-        portfolio_value = info.get('portfolio_value', 0)
-        market_return = info.get('market_return', 0)
-        agent_return = info.get('agent_return', 0)
-
-        logger.info(
-            f"Ep {episode}/{num_episodes} | Steps: {episode_steps:5d} | Reward: {episode_reward:8.2f} | "
-            f"Portfolio: ${portfolio_value:10.2f} | Return: {agent_return:7.2f}% | Mkt Return: {market_return:7.2f}%"
+        env = TradingEnvironment(
+            df,
+            initial_balance=cfg.environment.initial_balance,
+            commission_rate=cfg.environment.commission_rate,
+            profit_bonus=cfg.environment.profit_bonus,
+            drawdown_penalty=cfg.environment.drawdown_penalty
         )
-        training_history.append({
-            "episode": episode, "reward": episode_reward, "steps": episode_steps,
-            "portfolio_value": portfolio_value, "agent_return": agent_return,
-            "total_timesteps": total_timesteps
-        })
+        state_dim = env.n_features
+        action_dim = 1
 
-        if episode_reward > best_episode_reward:
-            best_episode_reward = episode_reward
-            agent.save("models/best_ddqn_model.pth")
-            logger.info(f"*** New best model saved with reward: {best_episode_reward:.2f} ***")
+        # --- AGENT INITIALIZATION ---
+        agent = PPOAgent(
+            state_dim=state_dim,
+            action_dim=action_dim,
+            lr=cfg.agent.lr,
+            gamma=cfg.agent.gamma,
+            K_epochs=cfg.agent.K_epochs,
+            eps_clip=cfg.agent.eps_clip,
+            device=cfg.training.device
+        )
 
-        if episode % save_freq == 0:
-            agent.save(f"models/ddqn_checkpoint_ep{episode}.pth")
+        # --- ON-POLICY TRAINING LOOP ---
+        logger.info("Starting training loop...")
+        start_time = time.time()
+        timestep_counter = 0
+        memory = {'states': [], 'actions': [], 'log_probs': [], 'rewards': [], 'dones': []}
 
-        if total_timesteps >= max_timesteps:
-            logger.info(f"Reached max timesteps ({max_timesteps}). Terminating training.")
-            break
+        for episode in range(1, cfg.training.num_episodes + 1):
+            state = env.reset()
+            episode_reward = 0
 
-    # --- END OF TRAINING ---
-    end_time = time.time()
-    total_duration_m = (end_time - start_time) / 60
+            while True:
+                timestep_counter += 1
+                action, log_prob = agent.select_action(state)
+                next_state, reward, done, info = env.step(action.item())
 
-    logger.info("================================================================================")
-    logger.info(f"TRAINING COMPLETED in {total_duration_m:.2f} minutes")
-    logger.info("================================================================================")
+                memory['states'].append(state)
+                memory['actions'].append(action)
+                memory['log_probs'].append(log_prob)
+                memory['rewards'].append(reward)
+                memory['dones'].append(done)
 
-    agent.save("models/final_ddqn_model.pth")
-    history_df = pd.DataFrame(training_history)
-    history_df.to_csv("models/training_history_ddqn.csv", index=False)
+                state = next_state
+                episode_reward += reward
 
-    logger.info("Final model and training history saved successfully.")
+                if timestep_counter % cfg.training.update_timestep == 0:
+                    agent.train(memory)
+                    memory = {'states': [], 'actions': [], 'log_probs': [], 'rewards': [], 'dones': []}
+
+                if done:
+                    break
+
+            # Log metrics to MLflow
+            mlflow.log_metric("episode_reward", episode_reward, step=episode)
+            mlflow.log_metric("final_portfolio_value", info.get('portfolio_value', 0), step=episode)
+            mlflow.log_metric("agent_return_percent", info.get('agent_return', 0), step=episode)
+
+            logger.info(
+                f"Ep {episode}/{cfg.training.num_episodes} | Reward: {episode_reward:8.2f} | "
+                f"Portfolio: ${info.get('portfolio_value', 0):10.2f} | Return: {info.get('agent_return', 0):7.2f}%"
+            )
+
+            if episode % cfg.training.model_save_freq == 0:
+                checkpoint_path = f"ppo_checkpoint_ep{episode}.pth"
+                agent.save(checkpoint_path)
+                mlflow.log_artifact(checkpoint_path, artifact_path="checkpoints")
+                os.remove(checkpoint_path) # Clean up local file
+
+        end_time = time.time()
+        training_duration_minutes = (end_time - start_time) / 60
+        mlflow.log_metric("training_duration_minutes", training_duration_minutes)
+        logger.info(f"TRAINING COMPLETED in {training_duration_minutes:.2f} minutes")
+
+        # Save and log the final model as an artifact
+        final_model_path = "final_ppo_model.pth"
+        agent.save(final_model_path)
+        mlflow.log_artifact(final_model_path, artifact_path="model")
+        os.remove(final_model_path)
+
+        logger.info("="*60)
+        logger.info("MLflow Run Completed. View results with 'mlflow ui'")
+        logger.info("="*60)
 
 if __name__ == '__main__':
-    logger = setup_logging()
-    run_training(
-        data_file="BTCUSDT-5m_2023-01-01_to_2023-12-31_features.csv",
-        num_episodes=100,
-        batch_size=256,
-        start_timesteps=50000,
-        max_timesteps=1_000_000,
-        save_freq=10,
-        logger=logger
-    )
+    main()

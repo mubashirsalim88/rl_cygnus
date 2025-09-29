@@ -4,7 +4,11 @@
       "Bash(mkdir:*)",
       "Bash(python test:*)",
       "Bash(python:*)",
-      "Bash(timeout 30 python:*)"
+      "Bash(timeout 30 python:*)",
+      "Bash(pip install:*)",
+      "Bash(pip uninstall:*)",
+      "Bash(rm:*)",
+      "Bash(chmod:*)"
     ],
     "deny": [],
     "ask": []

@@ -1,9 +1,7 @@
 from .environment import TradingEnvironment
-from .agent import DuelingDDQNAgent
-from .replay_buffer import ReplayBuffer
+from .agent_ppo import PPOAgent
 
 __all__ = [
     "TradingEnvironment",
-    "DuelingDDQNAgent",
-    "ReplayBuffer",
+    "PPOAgent",
 ]
