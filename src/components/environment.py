@@ -172,8 +172,8 @@ class TradingEnvironment:
         """
         reward = 0.0
 
-        # Profit-Taking Incentive: reward realized profits from SELL actions
-        if action == 2 and entry_price_for_cycle > 0:
+        # CORRECTED: Profit-Taking Incentive based on an actual sell event
+        if action < 0 and entry_price_for_cycle > 0:
             realized_pnl = (execution_price - entry_price_for_cycle) / entry_price_for_cycle
             if realized_pnl > 0:
                 reward += realized_pnl * self.profit_bonus
