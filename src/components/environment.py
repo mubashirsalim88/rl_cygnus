@@ -128,6 +128,8 @@ class TradingEnvironment:
         """
         Performs one step in the environment.
         """
+        action = np.clip(action, -1.0, 1.0)
+
         # Store previous portfolio value for reward calculation
         self.previous_portfolio_value = self.portfolio_value
 

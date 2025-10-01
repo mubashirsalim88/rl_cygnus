@@ -1,6 +1,5 @@
 #!/bin/bash
 # Script to run a batch of PPO training experiments on a remote server.
-# Assumes you have already run 'pip install -r requirements.txt'
 
 echo "--- Starting Experiment Batch ---"
 TIMESTAMP=$(date +"%Y-%m-%d_%H-%M-%S")

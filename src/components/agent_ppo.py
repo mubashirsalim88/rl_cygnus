@@ -16,7 +16,8 @@ class Actor(nn.Module):
             nn.Tanh(),
             nn.Linear(hidden_dim, hidden_dim),
             nn.Tanh(),
-            nn.Linear(hidden_dim, action_dim)
+            nn.Linear(hidden_dim, action_dim),
+            nn.Tanh()
         )
         # We learn the log standard deviation as a parameter
         self.log_std = nn.Parameter(torch.zeros(action_dim))
