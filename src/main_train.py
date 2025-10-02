@@ -101,7 +101,7 @@ def main(cfg: DictConfig):
             while True:
                 timestep_counter += 1
                 action, log_prob = agent.select_action(state)
-                next_state, reward, done, info = env.step(action.item())
+                next_state, reward, done, info = env.step(action)
 
                 memory['states'].append(state)
                 memory['actions'].append(action)
@@ -115,7 +115,7 @@ def main(cfg: DictConfig):
                 if timestep_counter % 500 == 0:
                     logger.info(
                         f"    Step {env.current_step} | "
-                        f"Action: {action.item():.2f} | "
+                        f"Action: {action:.2f} | "
                         f"Portfolio Value: ${info.get('portfolio_value', 0):.2f}"
                     )
 
