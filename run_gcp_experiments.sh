@@ -33,4 +33,4 @@ fi
 
 echo "--- All experiments launched in the background. ---"
 echo "Monitor progress with: tail -f ${LOG_FILE}"
-echo "Access MLflow UI at: http://34.93.96.195:5000"
+echo "Access MLflow UI at: http://34.131.15.81:5000"
