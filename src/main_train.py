@@ -75,7 +75,7 @@ def main(cfg: DictConfig):
             drawdown_penalty=cfg.environment.drawdown_penalty
         )
         state_dim = env.n_features
-        action_dim = 1
+        action_dim = env.action_space.n # Use the number of discrete actions from the env
 
         # --- AGENT INITIALIZATION ---
         agent = PPOAgent(
@@ -112,6 +112,13 @@ def main(cfg: DictConfig):
                 state = next_state
                 episode_reward += reward
 
+                if timestep_counter % 500 == 0:
+                    logger.info(
+                        f"    Step {env.current_step} | "
+                        f"Action: {action.item():.2f} | "
+                        f"Portfolio Value: ${info.get('portfolio_value', 0):.2f}"
+                    )
+
                 if timestep_counter % cfg.training.update_timestep == 0:
                     agent.train(memory)
                     memory = {'states': [], 'actions': [], 'log_probs': [], 'rewards': [], 'dones': []}
@@ -130,7 +137,9 @@ def main(cfg: DictConfig):
             )
 
             if episode % cfg.training.model_save_freq == 0:
-                checkpoint_path = f"ppo_checkpoint_ep{episode}.pth"
+                # Ensure the directory exists
+                os.makedirs("checkpoints", exist_ok=True)
+                checkpoint_path = f"checkpoints/ppo_checkpoint_ep{episode}.pth"
                 agent.save(checkpoint_path)
                 mlflow.log_artifact(checkpoint_path, artifact_path="checkpoints")
                 os.remove(checkpoint_path) # Clean up local file

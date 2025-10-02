@@ -1,6 +1,6 @@
 import torch
 import torch.nn as nn
-from torch.distributions import Normal
+from torch.distributions import Normal, Categorical
 import numpy as np
 import os
 
@@ -16,19 +16,12 @@ class Actor(nn.Module):
             nn.Tanh(),
             nn.Linear(hidden_dim, hidden_dim),
             nn.Tanh(),
-            nn.Linear(hidden_dim, action_dim),
-            nn.Tanh()
+            nn.Linear(hidden_dim, action_dim) # No Tanh activation here
         )
-        # We learn the log standard deviation as a parameter
-        self.log_std = nn.Parameter(torch.zeros(action_dim))
 
     def forward(self, state):
-        # The network outputs the mean of the action distribution
-        action_mean = self.network(state)
-        # We exponentiate the log_std to ensure std is positive
-        action_std = torch.exp(self.log_std)
-        # Create a normal distribution with this mean and std
-        dist = Normal(action_mean, action_std)
+        action_logits = self.network(state)
+        dist = Categorical(logits=action_logits)
         return dist
 
 class Critic(nn.Module):
@@ -75,12 +68,13 @@ class PPOAgent:
             dist = self.actor_old(state)
             action = dist.sample()
             action_log_prob = dist.log_prob(action)
-        return action.cpu().numpy(), action_log_prob.cpu().numpy()
+        # Return the integer action and its log probability
+        return action.item(), action_log_prob.cpu().numpy()
 
     def train(self, memory):
         # 1. Get old trajectories from memory
         old_states = torch.FloatTensor(np.array(memory['states'])).to(self.device)
-        old_actions = torch.FloatTensor(np.array(memory['actions'])).to(self.device)
+        old_actions = torch.tensor(memory['actions'], dtype=torch.long).to(self.device)
         old_log_probs = torch.FloatTensor(np.array(memory['log_probs'])).to(self.device)
         rewards = torch.FloatTensor(memory['rewards']).to(self.device)
         dones = torch.BoolTensor(memory['dones']).to(self.device)
