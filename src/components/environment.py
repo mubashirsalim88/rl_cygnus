@@ -39,7 +39,7 @@ class TradingEnvironment:
 
     The environment simulates market interactions including commissions, slippage, and latency.
     """
-    def __init__(self, df: pd.DataFrame, initial_balance: float = 10000.0, commission_rate: float = 0.001, latency: int = 1, profit_bonus: float = 1.0, drawdown_penalty: float = 0.1, trade_size_percentage: float = 0.1):
+    def __init__(self, df: pd.DataFrame, initial_balance: float = 10000.0, commission_rate: float = 0.001, latency: int = 1, profit_bonus: float = 1.0, drawdown_penalty: float = 0.1, trade_size_percentage: float = 0.1, reward_profit_bonus_weight: float = 1.5, reward_drawdown_penalty_weight: float = 0.5):
         self.df = df
         self.initial_balance = initial_balance
         self.commission_rate = commission_rate
@@ -47,8 +47,10 @@ class TradingEnvironment:
         self.profit_bonus = profit_bonus
         self.drawdown_penalty = drawdown_penalty
         self.trade_size_percentage = trade_size_percentage
+        self.reward_profit_bonus_weight = reward_profit_bonus_weight
+        self.reward_drawdown_penalty_weight = reward_drawdown_penalty_weight
         self.feature_columns = [col for col in df.columns if col not in ['timestamp', 'close']]
-        self.n_features = len(self.feature_columns) + 5  # +1 for position_status, +4 for positional features
+        self.n_features = len(self.feature_columns) + 8  # +1 for position_status, +7 for positional features
 
         # Define the discrete action space
         self.action_space = gym.spaces.Discrete(3)  # 0: SELL, 1: HOLD, 2: BUY
@@ -66,8 +68,14 @@ class TradingEnvironment:
         # Trade state variables
         self.position_status = 0  # 0: flat, 1: long
         self.entry_price = 0.0
+        self.entry_portfolio_value = 0.0
         self.steps_in_trade = 0
         self.high_water_mark = 0.0
+
+        # New position-aware features
+        self.unrealized_pnl = 0.0
+        self.peak_pnl_since_entry = 0.0
+        self.drawdown_from_peak = 0.0
 
         self.dsr_calculator = DifferentialSortinoRatio()
         return self._get_observation()
@@ -79,7 +87,7 @@ class TradingEnvironment:
             # Return zeros with position_status and positional features appended
             base_observation = np.zeros(len(self.feature_columns))
             full_observation = np.append(base_observation, self.position_status)
-            positional_features = np.zeros(4)  # P&L, Duration, Drawdown, Norm. Entry Price
+            positional_features = np.zeros(7)  # P&L, Duration, Drawdown, Norm. Entry Price, Unrealized PnL, Time Since Entry, Drawdown from Peak
             full_observation = np.append(full_observation, positional_features)
             return full_observation.astype(np.float32)
 
@@ -88,7 +96,7 @@ class TradingEnvironment:
 
         # Calculate positional features
         current_price = self._get_current_price()
-        positional_features = np.zeros(4)  # P&L, Duration, Drawdown, Norm. Entry Price
+        positional_features = np.zeros(7)  # P&L, Duration, Drawdown, Norm. Entry Price, Unrealized PnL, Time Since Entry, Drawdown from Peak
 
         if self.position_status == 1 and self.entry_price > 0:
             # Unrealized P&L: percentage profit or loss
@@ -100,6 +108,10 @@ class TradingEnvironment:
                 positional_features[2] = (self.high_water_mark - current_price) / self.high_water_mark
             # Normalized entry price: entry price relative to current price
             positional_features[3] = self.entry_price / current_price
+            # New features: unrealized_pnl, time_since_entry, drawdown_from_peak
+            positional_features[4] = self.unrealized_pnl
+            positional_features[5] = self.steps_in_trade  # time_since_entry is same as steps_in_trade
+            positional_features[6] = self.drawdown_from_peak
 
         # Append position_status and positional features to the observation
         full_observation = np.append(observation, self.position_status)
@@ -137,6 +149,7 @@ class TradingEnvironment:
                     self.position_status = 1
                     self.steps_in_trade = 0
                     self.high_water_mark = self.entry_price
+                    self.entry_portfolio_value = self.balance + self.shares_held * self.entry_price
                     execution_price = self.entry_price
 
         elif action == 0 and self.position_status == 1:  # SELL
@@ -154,8 +167,12 @@ class TradingEnvironment:
                     self.shares_held = 0
                     self.position_status = 0
                     self.entry_price = 0.0
+                    self.entry_portfolio_value = 0.0
                     self.steps_in_trade = 0
                     self.high_water_mark = 0.0
+                    self.unrealized_pnl = 0.0
+                    self.peak_pnl_since_entry = 0.0
+                    self.drawdown_from_peak = 0.0
 
         # If action is 1 (HOLD), do nothing.
         return execution_price, entry_price_for_cycle
@@ -176,6 +193,17 @@ class TradingEnvironment:
         if self.position_status == 1:
             self.steps_in_trade += 1
             self.high_water_mark = max(self.high_water_mark, self._get_current_price())
+
+        # Update new position-aware features
+        if self.position_status == 1:
+            current_pnl = (self.portfolio_value - self.entry_portfolio_value) / self.entry_portfolio_value
+            self.unrealized_pnl = current_pnl
+            self.peak_pnl_since_entry = max(self.peak_pnl_since_entry, self.unrealized_pnl)
+            self.drawdown_from_peak = self.peak_pnl_since_entry - self.unrealized_pnl
+        else:  # Reset when flat
+            self.unrealized_pnl = 0.0
+            self.peak_pnl_since_entry = 0.0
+            self.drawdown_from_peak = 0.0
 
         # Get reward and check if done
         reward = self._get_reward(action, execution_price, entry_price_for_cycle)
@@ -206,16 +234,23 @@ class TradingEnvironment:
 
     def _get_reward(self, action: int, execution_price: float, entry_price_for_cycle: float) -> float:
         """
-        Calculates the reward using the Differential Sortino Ratio.
+        Calculates the composite reward to incentivize profit-taking and penalize unrealized drawdowns.
         """
-        # Calculate portfolio return for the current step
-        # Ensure previous_portfolio_value is not zero to avoid division errors
-        if self.previous_portfolio_value > 1e-8:
-            portfolio_return = (self.portfolio_value / self.previous_portfolio_value) - 1
-        else:
-            portfolio_return = 0.0
+        # 1. Baseline dense reward (per-step change in portfolio value)
+        portfolio_return = (self.portfolio_value / self.previous_portfolio_value) - 1
+        baseline_reward = portfolio_return
 
-        # Get the dense, risk-adjusted reward from the DSR calculator
-        reward = self.dsr_calculator.step(portfolio_return)
+        # 2. Proactive drawdown penalty (dense)
+        drawdown_penalty = self.drawdown_from_peak * self.reward_drawdown_penalty_weight
 
-        return reward
+        # 3. Profit-taking bonus (sparse)
+        profit_bonus = 0.0
+        if entry_price_for_cycle > 0:  # This is true only when a trade is closed
+            realized_profit = (execution_price - entry_price_for_cycle) / entry_price_for_cycle
+            if realized_profit > 0:
+                profit_bonus = realized_profit * self.reward_profit_bonus_weight
+
+        # 4. Composite Reward
+        total_reward = baseline_reward - drawdown_penalty + profit_bonus
+
+        return total_reward

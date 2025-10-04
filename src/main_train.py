@@ -72,10 +72,12 @@ def main(cfg: DictConfig):
             initial_balance=cfg.environment.initial_balance,
             commission_rate=cfg.environment.commission_rate,
             profit_bonus=cfg.environment.profit_bonus,
-            drawdown_penalty=cfg.environment.drawdown_penalty
+            drawdown_penalty=cfg.environment.drawdown_penalty,
+            reward_profit_bonus_weight=cfg.environment.reward_profit_bonus_weight,
+            reward_drawdown_penalty_weight=cfg.environment.reward_drawdown_penalty_weight
         )
         state_dim = env.n_features
-        action_dim = env.action_space.n # Use the number of discrete actions from the env
+        action_dim = int(env.action_space.n)  # Convert to Python int
 
         # --- AGENT INITIALIZATION ---
         agent = PPOAgent(
