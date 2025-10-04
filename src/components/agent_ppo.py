@@ -121,7 +121,11 @@ class PPOAgent:
         self.actor_old.load_state_dict(self.actor.state_dict())
 
     def save(self, filepath):
-        os.makedirs(os.path.dirname(filepath), exist_ok=True)
+        # Create the directory only if it's specified in the path
+        dir_name = os.path.dirname(filepath)
+        if dir_name:
+            os.makedirs(dir_name, exist_ok=True)
+
         torch.save({
             'actor_state_dict': self.actor.state_dict(),
             'critic_state_dict': self.critic.state_dict(),
